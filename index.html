@@ -1,0 +1,1230 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VELORA</title>
+<meta name="theme-color" content="#090608">
+<meta name="description" content="VELORA — your private visual gallery">
+<link rel="manifest" href="./manifest.webmanifest">
+<style>
+:root{
+  --bg:#090608; --panel:#160b10; --panel2:#241018; --text:#f7eef0; --muted:#c2aeb4;
+  --accent:#d8b879; --on-accent:#160b0d; --danger:#ff7d89; --r:10px;
+  --viewer-bg:rgba(10,7,13,.97); --header-bg:rgba(23,19,29,.94);
+  --glow:rgba(216,184,121,.18); --ambient1:rgba(85,42,91,.20); --ambient2:rgba(150,91,65,.10);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{height:100%}
+body{
+  margin:0; min-height:100%;
+  background:
+    radial-gradient(ellipse at 12% 0%,var(--ambient1),transparent 42%),
+    radial-gradient(ellipse at 92% 28%,var(--ambient2),transparent 38%),
+    var(--bg);
+  background-attachment:fixed; color:var(--text);
+  font-family:"Noto Sans Thai UI","Sarabun",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:16px; line-height:1.5;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+}
+header{
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:5;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:12px 16px; background:var(--header-bg); backdrop-filter:blur(6px);
+  border-bottom:1px solid color-mix(in srgb,var(--accent) 18%,var(--panel2)); box-shadow:0 8px 28px rgba(0,0,0,.16);
+}
+h1{margin:0; font-size:1.15rem; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+h1 small{color:var(--muted); font-weight:400; margin-left:8px; font-size:.9rem}
+.left{display:flex; align-items:center; gap:8px; min-width:0}
+.actions{display:flex; gap:8px; align-items:center; flex-shrink:0}
+button{
+  font:inherit; color:var(--text); background:var(--panel2); border:0; border-radius:8px;
+  padding:8px 14px; cursor:pointer; min-height:40px;
+}
+button:hover{background:var(--panel2); filter:brightness(1.12)}
+button.primary{background:var(--accent); color:var(--on-accent); font-weight:600}
+button.primary:hover{filter:brightness(1.12); box-shadow:0 0 20px var(--glow)}
+#back{padding:0; width:40px; font-size:1.2rem; flex-shrink:0}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+details.more{position:relative}
+details.more summary{
+  list-style:none; cursor:pointer; background:var(--panel2); border-radius:8px;
+  min-height:40px; min-width:40px; display:flex; align-items:center; justify-content:center; font-size:1.2rem;
+}
+details.more summary::-webkit-details-marker{display:none}
+.menu{
+  position:absolute; right:0; top:46px; width:250px; background:var(--panel);
+  border:1px solid var(--panel2); border-radius:var(--r); padding:8px; display:grid; gap:6px;
+  box-shadow:0 8px 24px rgba(0,0,0,.4); z-index:6;
+}
+.menu button{text-align:left; background:transparent}
+.menu button:hover{background:var(--panel2)}
+.menu .danger{color:var(--danger)}
+.theme-label{display:block; color:var(--muted); font-size:.82rem; padding:8px 10px 0}
+.theme-select{width:100%; background:var(--bg); color:var(--text); border:1px solid var(--panel2); border-radius:8px; padding:9px 10px; font:inherit}
+#status{min-height:24px; padding:6px 16px 0; color:var(--muted); font-size:.9rem}
+main{padding:12px 16px 80px}
+
+/* folders (home) */
+#fgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:18px 16px; max-width:760px; margin:0 auto}
+.fcard{position:relative; border-radius:var(--r); transition:outline-color .1s}
+.fcard.over{outline:3px dashed var(--accent); outline-offset:4px}
+.fopen{display:block; width:100%; padding:0; background:transparent; text-align:left; min-height:0}
+.fopen:hover{background:transparent}
+.fcover{aspect-ratio:1; background:linear-gradient(145deg,var(--panel2),var(--panel)); border:1px solid color-mix(in srgb,var(--accent) 16%,transparent); border-radius:var(--r); overflow:hidden; display:flex; align-items:center; justify-content:center}
+.fcover img{width:100%; height:100%; object-fit:cover; display:block; pointer-events:none}
+.ficon{font-size:3.2rem; color:var(--muted)}
+.fname{margin-top:8px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.fn{color:var(--muted); font-size:.8rem}
+.ftools{position:absolute; top:8px; right:8px; display:flex; gap:6px}
+.ftools button{width:36px; height:36px; min-height:36px; padding:0; border-radius:50%; background:rgba(20,18,26,.78); font-size:1rem}
+.ftools button:hover{background:rgba(20,18,26,.95)}
+
+#fgrid:not(:empty){margin-bottom:36px}
+
+/* files */
+/* justified rows: every row has the same height, each picture's width follows its shape */
+#grid{--th:clamp(120px, 17vw, 210px); --gap:6px; display:flex; flex-wrap:wrap; gap:var(--gap); max-width:1700px; margin:0 auto}
+#grid::after{content:""; flex-grow:1000000}   /* keeps the last row from stretching */
+.tile{flex:var(--g,1) 1 calc(var(--g,1) * var(--th)); min-width:0}
+.thumb{
+  position:relative; display:block; width:100%; aspect-ratio:var(--ar,4/3); padding:0;
+  background:linear-gradient(145deg,var(--panel2),var(--panel)); border:1px solid color-mix(in srgb,var(--accent) 12%,transparent); border-radius:6px; overflow:hidden;
+}
+.thumb:hover{background:var(--panel)}
+.thumb img,.thumb video{width:100%; height:100%; object-fit:cover; display:block; -webkit-user-drag:none; pointer-events:none}
+.thumb img:not([src]),.thumb video:not([src]){visibility:hidden}
+.badge{
+  position:absolute; left:8px; bottom:8px; background:rgba(20,18,26,.78); color:var(--text);
+  font-size:.75rem; padding:2px 8px; border-radius:20px;
+}
+.badge:empty{display:none}
+.play{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:68px; height:68px;
+  border-radius:50%; background:rgba(20,18,26,.72); color:var(--text); font-size:1.7rem;
+  display:flex; align-items:center; justify-content:center; padding-left:5px; pointer-events:none;
+}
+.thumb .play{width:44px; height:44px; font-size:1.1rem; padding-left:3px}
+.thumb .badge{left:6px; bottom:6px; font-size:.7rem}
+.thumb .cmark{
+  position:absolute; right:6px; bottom:6px; background:rgba(20,18,26,.78); color:var(--text);
+  font-size:.7rem; padding:2px 7px; border-radius:20px;
+}
+.empty{text-align:center; color:var(--muted); padding:80px 20px}
+.empty strong{display:block; color:var(--text); font-size:1.1rem; margin-bottom:6px}
+
+#viewer{
+  position:fixed; inset:0; z-index:20; background:var(--viewer-bg);
+  display:flex; flex-direction:column;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+}
+#vstage{flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding:12px 12px 6px; position:relative}
+#vstage img,#vstage video{max-width:100%; max-height:100%; border-radius:6px; background:#000; touch-action:none; transform-origin:center center}
+#vbar{width:100%; max-width:720px; margin:0 auto; padding:6px 12px 12px}
+#vstage{min-height:120px}
+#vcap{
+  width:100%; height:clamp(130px,24vh,240px); resize:vertical; display:block; background:var(--panel); color:var(--text);
+  border:1px solid transparent; border-radius:8px; padding:10px 12px; font:inherit; font-size:1rem; line-height:1.5;
+}
+#vcap:focus{border-color:var(--accent); outline:none}
+#vcap::placeholder{color:var(--muted)}
+.tag-panel{margin-top:8px; border:1px solid var(--panel2); border-radius:8px; background:rgba(0,0,0,.08); overflow:hidden}
+.tag-panel summary{cursor:pointer; padding:7px 10px; color:var(--muted); font-size:.88rem; list-style:none}
+.tag-panel summary::-webkit-details-marker{display:none}
+.tag-panel summary::before{content:"＋"; display:inline-block; margin-right:8px; color:var(--accent)}
+.tag-panel[open] summary::before{content:"−"}
+.tag-editor{display:flex; gap:8px; align-items:flex-start; padding:0 8px 8px}
+#vtagIn{flex:1; min-width:0; background:var(--panel); color:var(--text); border:1px solid var(--panel2); border-radius:8px; padding:9px 12px; font:inherit}
+#vtagIn:focus{border-color:var(--accent); outline:none}
+#vtagAdd{min-height:42px; white-space:nowrap}
+#vTags{display:flex; flex-wrap:wrap; gap:6px; padding:0 8px 8px; min-height:0}
+.tag-chip{display:inline-flex; align-items:center; gap:5px; border:1px solid color-mix(in srgb,var(--accent) 34%,var(--panel2)); border-radius:20px; padding:3px 9px; color:var(--accent); background:linear-gradient(135deg,var(--panel2),var(--panel)); box-shadow:0 2px 12px var(--glow); font-size:.82rem}
+.tag-chip button{min-height:0; padding:0 2px; background:transparent; color:var(--muted); font-size:.9rem}
+.zoom-row{display:flex; justify-content:center; align-items:center; gap:8px; margin:0 0 5px}
+#zoomLevel{min-width:48px; text-align:center; color:var(--muted); font-size:.8rem}
+.vrow{display:flex; align-items:center; gap:6px; min-height:36px; margin-top:4px}
+#vstate{flex:1; color:var(--muted); font-size:.85rem}
+.vrow button{padding:4px 12px; min-height:36px; font-size:.9rem}
+#vmove,#vdel{background:transparent; color:var(--muted)}
+#vmove:hover{color:var(--text)}
+#vdel:hover{color:var(--danger)}
+#closeV{position:absolute; top:calc(10px + env(safe-area-inset-top,0px)); right:10px; width:44px; height:44px; font-size:1.3rem; padding:0; border-radius:50%; z-index:2; background:rgba(50,46,59,.85)}
+.vnav{
+  position:absolute; top:50%; transform:translateY(-50%); width:44px; height:64px; padding:0; font-size:1.8rem;
+  background:rgba(50,46,59,.7); z-index:2;
+}
+#prevV{left:6px; border-radius:0 10px 10px 0}
+#nextV{right:6px; border-radius:10px 0 0 10px}
+#drop{
+  position:fixed; inset:0; z-index:30; display:flex; align-items:center; justify-content:center;
+  background:rgba(157,176,255,.18); border:3px dashed var(--accent); font-size:1.4rem; pointer-events:none;
+}
+
+dialog{
+  background:var(--panel); color:var(--text); border:1px solid var(--panel2); border-radius:14px;
+  padding:18px; width:min(92vw,360px);
+}
+dialog::backdrop{background:rgba(0,0,0,.6)}\n.storage-card{background:var(--bg);border:1px solid var(--panel2);border-radius:9px;padding:10px 12px;margin:8px 0}.storage-card p{margin:4px 0 0;color:var(--muted);overflow-wrap:anywhere}
+dialog label{display:block; margin-bottom:10px; font-weight:600}
+dialog input,dialog select{
+  width:100%; background:var(--bg); color:var(--text); border:1px solid var(--panel2); border-radius:8px;
+  padding:10px 12px; font:inherit;
+}
+dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
+.dbtn{display:flex; justify-content:flex-end; gap:8px; margin-top:16px}
+
+@media (max-width:480px){
+  #grid{--th:112px; --gap:4px}
+  header{padding:10px 12px}
+  main{padding:10px 6px 80px}
+  #fgrid{padding:0 6px}
+  .vnav{width:36px; height:56px}
+  #vbar{padding:4px 8px 8px}
+  #vcap{height:clamp(110px,20vh,170px); font-size:16px}
+  .tag-editor{align-items:stretch}
+  #vtagAdd{padding:6px 10px}
+  #fgrid{grid-template-columns:repeat(2,1fr); gap:16px 12px}
+}
+</style>
+</head>
+<body>
+
+<!-- header: home -->
+<header id="hHome">
+  <h1>VELORA <small id="count"></small></h1>
+  <div class="actions">
+    <button id="newFolder" class="primary" type="button">+ สร้างแฟ้ม</button>
+    <button id="addHome" type="button">เพิ่มไฟล์</button>
+    <details class="more">
+      <summary aria-label="เมนูเพิ่มเติม">⋯</summary>
+      <div class="menu">
+        <button id="exportCode" type="button">ส่งออกเป็นโค้ด</button>
+        <button id="importCode" type="button">นำเข้าจากโค้ด</button>
+        <button id="export" type="button">ส่งออกไฟล์สำรอง (.galv)</button>
+        <button id="import" type="button">นำเข้าไฟล์สำรอง (.galv)</button>\n        <button id="storageOpen" type="button">Storage Manager · พื้นที่จัดเก็บ</button>
+        <label class="theme-label" for="themeSelect">ธีมสีแอป</label>
+        <select id="themeSelect" class="theme-select">
+          <option value="mystery">MYSTERY · ดำ/แดงไวน์/แชมเปญ</option>
+          <option value="passion">PASSION · ดำ/แดงเชอร์รี</option>
+          <option value="romance">ROMANCE · ดำ/กุหลาบ/แชมเปญ</option>
+        </select>
+      </div>
+    </details>
+  </div>
+</header>
+
+<!-- header: inside a folder -->
+<header id="hFolder" hidden>
+  <div class="left">
+    <button id="back" type="button" aria-label="กลับ">←</button>
+    <h1><span id="fnameT"></span><small id="fcount"></small></h1>
+  </div>
+  <div class="actions">
+    <button id="add" class="primary" type="button">เพิ่มไฟล์</button>
+    <button id="shuffle" type="button">สุ่มใหม่</button>
+    <details class="more" id="fmenu">
+      <summary aria-label="เมนูแฟ้ม">⋯</summary>
+      <div class="menu">
+        <button id="mRename" type="button">เปลี่ยนชื่อแฟ้ม</button>
+        <button id="mCover" type="button">เปลี่ยนรูปปกแฟ้ม</button>
+        <button id="mCoverOff" type="button">เอารูปปกออก</button>
+        <button id="mDelete" class="danger" type="button">ลบแฟ้ม</button>
+      </div>
+    </details>
+  </div>
+</header>
+
+<div id="status" role="status"></div>
+
+<main>
+  <section id="home">
+    <div id="fgrid"></div>
+    <div id="homeEmpty" class="empty" hidden>
+      <strong>ยังไม่มีแฟ้มหรือไฟล์</strong>
+      กด "+ สร้างแฟ้ม" แล้วลากรูปหรือวิดีโอมาวางบนแฟ้ม หรือกด "เพิ่มไฟล์" เพื่อเพิ่มไฟล์ที่ไม่อยู่ในแฟ้ม
+    </div>
+  </section>
+
+  <div id="grid"></div>
+  <div id="sentinel" style="height:1px"></div>
+  <div id="empty" class="empty" hidden>
+    <strong>แฟ้มนี้ยังว่าง</strong>
+    กด "เพิ่มไฟล์" เพื่อเลือกรูป GIF หรือวิดีโอ บนคอมลากไฟล์มาวางในหน้านี้ได้เลย
+  </div>
+</main>
+
+<div id="viewer" hidden>
+  <button id="closeV" type="button" aria-label="ปิด">✕</button>
+  <div id="vstage">
+    <button id="prevV" class="vnav" type="button" aria-label="ก่อนหน้า">‹</button>
+    <button id="nextV" class="vnav" type="button" aria-label="ถัดไป">›</button>
+  </div>
+  <div id="vbar">
+    <textarea id="vcap" rows="6" maxlength="2000" placeholder="เขียนข้อความ..."></textarea>
+    <div class="tag-strip">
+      <div id="vTags" aria-label="แท็คของไฟล์นี้"></div>
+      <button id="tagToggle" class="tag-plus" type="button" aria-label="เพิ่มแท็ค" title="เพิ่มแท็ค">＋</button>
+    </div>
+    <div class="tag-editor" id="tagEditor" hidden>
+      <input id="vtagIn" type="text" maxlength="40" placeholder="เพิ่มแท็ค เช่น #เที่ยว">
+      <button id="vtagAdd" type="button">เพิ่ม</button>
+    </div>
+    <div class="vrow">
+      <span id="vstate"></span>
+      <button id="vsave" class="primary" type="button" hidden>บันทึก</button>
+      <button id="vmove" type="button">ย้าย</button>
+      <button id="vdel" type="button">ลบ</button>
+    </div>
+  </div>
+</div>
+<div id="drop" hidden>วางไฟล์เพื่อเพิ่มลงในแฟ้มนี้</div>
+
+<dialog id="storageDlg" style="width:min(92vw,520px)">
+  <label>VELORA Storage Manager</label>
+  <p style="color:var(--muted);margin:0 0 12px">ตรวจสอบพื้นที่และตำแหน่งจัดเก็บข้อมูลของแอป</p>
+  <div class="storage-card"><strong>ตำแหน่งปัจจุบัน</strong><p id="storageLocation">กำลังตรวจสอบ...</p></div>
+  <div class="storage-card"><strong>พื้นที่ใช้งานของเว็บไซต์</strong><p id="storageUsage">กำลังคำนวณ...</p></div>
+  <div class="storage-card"><strong>ข้อมูลที่เก็บในเครื่องนี้</strong><p>รูปภาพ วิดีโอ GIF แฟ้ม แท็ก คำบรรยาย และข้อมูลแกลเลอรี จัดเก็บใน IndexedDB ของเบราว์เซอร์บนอุปกรณ์นี้</p></div>
+  <p style="color:var(--muted);font-size:.88rem">หมายเหตุ: ตำแหน่ง IndexedDB ถูกควบคุมโดยระบบปฏิบัติการและเบราว์เซอร์ การเลือกโฟลเดอร์ปลายทางโดยตรงยังไม่รองรับในทุกอุปกรณ์ การย้ายข้อมูลควรใช้ส่งออก/นำเข้าไฟล์สำรอง</p>
+  <div class="dbtn"><button type="button" id="storageRefresh">ตรวจสอบอีกครั้ง</button><button type="button" id="storageClose" class="primary">ปิด</button></div>
+</dialog>
+<dialog id="nameDlg">
+  <label id="nameT" for="nameIn"></label>
+  <input id="nameIn" type="text" maxlength="60" autocomplete="off">
+  <div class="dbtn">
+    <button type="button" id="nameNo">ยกเลิก</button>
+    <button type="button" id="nameOk" class="primary">ตกลง</button>
+  </div>
+</dialog>
+
+<dialog id="pickDlg">
+  <label for="pickSel">ย้ายไปแฟ้ม</label>
+  <select id="pickSel"></select>
+  <div class="dbtn">
+    <button type="button" id="pickNo">ยกเลิก</button>
+    <button type="button" id="pickOk" class="primary">ย้าย</button>
+  </div>
+</dialog>
+
+<dialog id="codeOutDlg">
+  <label>โค้ดสำรองพร้อมแล้ว <span id="codeSize" style="color:var(--muted);font-weight:400"></span></label>
+  <p style="margin:0 0 4px;color:var(--muted);font-size:.9rem">คัดลอกโค้ดไปเก็บไว้ แล้วนำไปวางในเครื่องใหม่ผ่านเมนู "นำเข้าจากโค้ด" ถ้าโค้ดยาวมาก ให้กด "บันทึกเป็นไฟล์ข้อความ" จะชัวร์กว่า</p>
+  <div class="dbtn" style="flex-wrap:wrap">
+    <button type="button" id="codeSave">บันทึกเป็นไฟล์ข้อความ</button>
+    <button type="button" id="codeCopy" class="primary">คัดลอกโค้ด</button>
+    <button type="button" id="codeOutNo">ปิด</button>
+  </div>
+</dialog>
+
+<dialog id="codeInDlg">
+  <label for="codeIn">วางโค้ดสำรอง</label>
+  <textarea id="codeIn" rows="5" placeholder="วางโค้ดที่นี่..." style="width:100%;background:var(--bg);color:var(--text);border:1px solid var(--panel2);border-radius:8px;padding:10px 12px;font:inherit;resize:vertical"></textarea>
+  <div class="dbtn" style="flex-wrap:wrap">
+    <button type="button" id="codeFile">เลือกไฟล์ข้อความ</button>
+    <button type="button" id="codeInNo">ยกเลิก</button>
+    <button type="button" id="codeInOk" class="primary">นำเข้า</button>
+  </div>
+</dialog>
+
+<input id="codeFileIn" type="file" accept=".txt,text/plain" hidden>
+<input id="fileIn" type="file" accept="image/*,video/*" multiple hidden>
+<input id="coverIn" type="file" accept="image/*" hidden>
+<input id="backupIn" type="file" accept=".galv" hidden>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  /* ---------- theme presets ---------- */
+  const themePresets = {
+    mystery: {
+      bg:'#100709', panel:'#211014', panel2:'#3a1a22', text:'#fff2f3', muted:'#c7aeb2',
+      accent:'#dfbd83', onAccent:'#26160d', danger:'#ff8eaa',
+      viewer:'rgba(8,4,12,.985)', header:'rgba(16,11,22,.94)',
+      glow:'rgba(223,189,131,.22)', ambient1:'rgba(112,18,39,.30)', ambient2:'rgba(189,126,83,.14)'
+    },
+    passion: {
+      bg:'#16070d', panel:'#2a0b16', panel2:'#501020', text:'#fff0f1', muted:'#d5a0a9',
+      accent:'#ff3158', onAccent:'#fff8f8', danger:'#ff9ba9',
+      viewer:'rgba(12,2,6,.99)', header:'rgba(22,7,13,.96)',
+      glow:'rgba(255,38,82,.28)', ambient1:'rgba(175,12,48,.38)', ambient2:'rgba(105,8,31,.22)'
+    },
+    romance: {
+      bg:'#1c1019', panel:'#321b2b', panel2:'#573047', text:'#fff4f0', muted:'#d6b4bd',
+      accent:'#f2b6a8', onAccent:'#32171c', danger:'#e77b91',
+      viewer:'rgba(15,6,12,.985)', header:'rgba(28,16,25,.95)',
+      glow:'rgba(244,176,169,.25)', ambient1:'rgba(171,77,116,.29)', ambient2:'rgba(215,174,116,.19)'
+    }
+  };
+  function applyTheme(name) {
+    const p = themePresets[name] || themePresets.mystery, root = document.documentElement;
+    root.style.setProperty('--bg',p.bg); root.style.setProperty('--panel',p.panel);
+    root.style.setProperty('--panel2',p.panel2); root.style.setProperty('--text',p.text);
+    root.style.setProperty('--muted',p.muted); root.style.setProperty('--accent',p.accent);
+    root.style.setProperty('--on-accent',p.onAccent); root.style.setProperty('--danger',p.danger);
+    root.style.setProperty('--viewer-bg',p.viewer); root.style.setProperty('--header-bg',p.header);
+    root.style.setProperty('--glow',p.glow); root.style.setProperty('--ambient1',p.ambient1);
+    root.style.setProperty('--ambient2',p.ambient2);
+    document.querySelector('meta[name="theme-color"]').content = p.bg;
+    $('#themeSelect').value = name;
+    try { localStorage.setItem('gallery-theme',name); } catch(e) {}
+  }
+  const savedTheme = (() => { try { return localStorage.getItem('gallery-theme') || 'mystery'; } catch(e) { return 'mystery'; } })();
+  $('#themeSelect').addEventListener('change', e => applyTheme(e.target.value));
+  applyTheme(savedTheme);
+
+  const grid = $('#grid'), viewer = $('#viewer'), statusEl = $('#status'), fgrid = $('#fgrid');
+  const BATCH = 48, THUMB_MAX = 960, COVER_MAX = 640, TV = 2;
+  const UNFILED = 0;
+  let db, rendered = 0, order = [], curFolder = null;   // curFolder: null = home, 0 = unfiled, n = folder id
+  const byId = new Map();       // files
+  const folders = new Map();    // folders
+  let coverUrls = [], coverTarget = null;
+
+  /* ---------- storage ---------- */
+  function openDB() {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('gallery-v1', 2);
+      r.onupgradeneeded = e => {
+        const d = r.result;
+        if (e.oldVersion < 1) {
+          d.createObjectStore('meta', { keyPath: 'id', autoIncrement: true });
+          d.createObjectStore('files', { keyPath: 'id' });
+        }
+        if (e.oldVersion < 2) d.createObjectStore('folders', { keyPath: 'id', autoIncrement: true });
+      };
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+  }
+  const req = r => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  const store = (n, m = 'readonly') => db.transaction(n, m).objectStore(n);
+  const getFile = async id => { const r = await req(store('files').get(id)); return r && r.blob; };
+  const putMeta = m => req(store('meta', 'readwrite').put(m));
+  const putFolder = f => req(store('folders', 'readwrite').put(f));
+
+  /* ---------- helpers ---------- */
+  let statusTimer;
+  function setStatus(t, ms = 3000) {
+    statusEl.textContent = t;
+    clearTimeout(statusTimer);
+    if (ms) statusTimer = setTimeout(() => { statusEl.textContent = ''; }, ms);
+  }
+  function shuffle(a) {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  const folderOf = m => m.folder || UNFILED;
+  const itemsOf = fid => [...byId.values()].filter(m => folderOf(m) === fid);
+  const loadImage = url => new Promise((res, rej) => {
+    const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url;
+  });
+  function canvasBlob(c) {
+    return new Promise(res => c.toBlob(b => b ? res(b) : c.toBlob(res, 'image/jpeg', .8), 'image/webp', .8));
+  }
+  function closeMenus() { document.querySelectorAll('details.more').forEach(d => { d.open = false; }); }
+  document.addEventListener('click', e => { if (!e.target.closest('details.more')) closeMenus(); });
+
+  /* ---------- dialogs ---------- */
+  function askName(title, initial) {
+    return new Promise(res => {
+      const dlg = $('#nameDlg'), inp = $('#nameIn');
+      $('#nameT').textContent = title; inp.value = initial || '';
+      let result = null;
+      const done = v => { result = v; dlg.close(); };
+      $('#nameOk').onclick = () => done(inp.value.trim());
+      $('#nameNo').onclick = () => done(null);
+      inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); done(inp.value.trim()); } };
+      dlg.onclose = () => res(result);
+      dlg.showModal(); inp.focus(); inp.select();
+    });
+  }
+  function pickFolder(current) {
+    return new Promise(res => {
+      const dlg = $('#pickDlg'), sel = $('#pickSel');
+      sel.innerHTML = '';
+      const add = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); };
+      add(UNFILED, 'ไม่ใส่แฟ้ม (หน้าแรก)');
+      [...folders.values()].sort((a, b) => a.created - b.created).forEach(f => add(f.id, f.name));
+      sel.value = String(current);
+      let result = null;
+      const done = v => { result = v; dlg.close(); };
+      $('#pickOk').onclick = () => done(+sel.value);
+      $('#pickNo').onclick = () => done(null);
+      dlg.onclose = () => res(result);
+      dlg.showModal();
+    });
+  }
+
+  /* ---------- thumbnails ---------- */
+  async function imageThumb(file, max = THUMB_MAX) {
+    let src, w, h, cleanup = () => {};
+    try {
+      src = await createImageBitmap(file); w = src.width; h = src.height;
+      cleanup = () => src.close && src.close();
+    } catch (e) {
+      const url = URL.createObjectURL(file);
+      try { src = await loadImage(url); w = src.naturalWidth; h = src.naturalHeight; }
+      finally { URL.revokeObjectURL(url); }
+    }
+    const s = Math.min(1, max / Math.max(w, h));
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(w * s)); c.height = Math.max(1, Math.round(h * s));
+    c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+    cleanup();
+    return { thumb: await canvasBlob(c), w, h };
+  }
+  function videoThumb(file) {
+    return new Promise(res => {
+      const url = URL.createObjectURL(file), v = document.createElement('video');
+      v.muted = true; v.playsInline = true; v.preload = 'auto';
+      let done = false, started = false;
+      const fail = { thumb: null, w: 0, h: 0 };
+      const finish = o => {
+        if (done) return; done = true; clearTimeout(timer);
+        URL.revokeObjectURL(url); v.removeAttribute('src'); v.load(); res(o);
+      };
+      const timer = setTimeout(() => finish(fail), 12000);
+      const grab = async () => {
+        if (done || !v.videoWidth) return;
+        try {
+          const s = Math.min(1, THUMB_MAX / Math.max(v.videoWidth, v.videoHeight));
+          const c = document.createElement('canvas');
+          c.width = Math.max(1, Math.round(v.videoWidth * s)); c.height = Math.max(1, Math.round(v.videoHeight * s));
+          c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+          finish({ thumb: await canvasBlob(c), w: v.videoWidth, h: v.videoHeight });
+        } catch (e) { finish(fail); }
+      };
+      v.onloadeddata = () => {
+        if (started) return; started = true;
+        try { v.currentTime = Math.min(0.3, (v.duration || 1) / 3); } catch (e) { grab(); }
+        setTimeout(grab, 2500);
+      };
+      v.onseeked = grab;
+      v.onerror = () => finish(fail);
+      v.src = url;
+    });
+  }
+
+  /* ---------- views ---------- */
+  function showView() {
+    const home = curFolder === null;
+    $('#home').hidden = !home;
+    $('#hHome').hidden = !home; $('#hFolder').hidden = home;
+    closeMenus();
+  }
+  function clearGrid() {
+    grid.querySelectorAll('.tile').forEach(hide);
+    tileObserver.disconnect();
+    grid.innerHTML = ''; rendered = 0;
+  }
+  function showHome() {
+    curFolder = null; clearGrid(); showView(); renderHome();
+    order = shuffle(itemsOf(UNFILED).map(m => m.id));   // files not in any folder show right on the home page
+    build(); window.scrollTo(0, 0);
+  }
+  function showFolder(id) {
+    curFolder = id; showView(); updateFolderHeader();
+    order = shuffle(itemsOf(id).map(m => m.id));
+    build(); window.scrollTo(0, 0);
+  }
+  function updateFolderHeader() {
+    const f = folders.get(curFolder);
+    $('#fnameT').textContent = curFolder === UNFILED ? 'ไม่ได้จัดแฟ้ม' : (f ? f.name : '');
+    $('#fmenu').hidden = curFolder === UNFILED;
+    $('#mCoverOff').hidden = !(f && f.cover);
+  }
+  function openFolder(id) {
+    try { history.pushState({ f: id }, ''); } catch (e) {}
+    showFolder(id);
+  }
+  function leaveFolder() {
+    if (history.state && history.state.f !== undefined) history.back(); else showHome();
+  }
+  function route() {
+    const st = history.state;
+    const target = st && st.f !== undefined && folders.has(st.f) || (st && st.f === UNFILED) ? st.f : null;
+    if (target === curFolder) return;
+    if (target === null) showHome(); else showFolder(target);
+  }
+  window.addEventListener('popstate', () => {
+    if (!viewer.hidden) { closeViewer(true); return; }
+    route();
+  });
+
+  /* ---------- home: folder cards ---------- */
+  function coverFor(f) {
+    if (f.cover) return f.cover;
+    const items = itemsOf(f.id).filter(m => m.thumb).sort((a, b) => b.added - a.added);
+    return items.length ? items[0].thumb : null;
+  }
+  function makeCard(f, virtual) {
+    const el = document.createElement('article');
+    el.className = 'fcard'; el.dataset.id = f.id;
+    el.innerHTML =
+      '<button class="fopen" type="button"><div class="fcover"></div><div class="fname"></div><div class="fn"></div></button>' +
+      (virtual ? '' : '<div class="ftools"><button class="fedit" type="button" aria-label="เปลี่ยนชื่อ">✎</button><button class="fimg" type="button" aria-label="เปลี่ยนรูปปก">🖼</button></div>');
+    el.querySelector('.fname').textContent = f.name;
+    el.querySelector('.fn').textContent = itemsOf(f.id).length + ' ไฟล์';
+    const cv = el.querySelector('.fcover'), blob = coverFor(f);
+    if (blob) {
+      const url = URL.createObjectURL(blob); coverUrls.push(url);
+      const img = document.createElement('img'); img.alt = ''; img.draggable = false; img.src = url;
+      cv.appendChild(img);
+    } else {
+      const s = document.createElement('span'); s.className = 'ficon'; s.textContent = '📁'; cv.appendChild(s);
+    }
+    return el;
+  }
+  function renderHome() {
+    coverUrls.forEach(u => URL.revokeObjectURL(u)); coverUrls = [];
+    fgrid.innerHTML = '';
+    const list = [...folders.values()].sort((a, b) => a.created - b.created);
+    const frag = document.createDocumentFragment();
+    list.forEach(f => frag.appendChild(makeCard(f, false)));
+    fgrid.appendChild(frag);
+    $('#homeEmpty').hidden = folders.size > 0 || itemsOf(UNFILED).length > 0;
+    $('#count').textContent = folders.size ? folders.size + ' แฟ้ม' : '';
+  }
+  fgrid.addEventListener('click', e => {
+    const el = e.target.closest('.fcard'); if (!el) return;
+    const id = +el.dataset.id;
+    if (e.target.closest('.fedit')) renameFolder(id);
+    else if (e.target.closest('.fimg')) chooseCover(id);
+    else if (e.target.closest('.fopen')) openFolder(id);
+  });
+
+  /* ---------- folder actions ---------- */
+  async function createFolder() {
+    const name = await askName('สร้างแฟ้มใหม่', '');
+    if (name === null) return;
+    const f = { name: name || 'แฟ้มใหม่', cover: null, created: Date.now() };
+    try {
+      f.id = await req(store('folders', 'readwrite').add(f));
+      folders.set(f.id, f); renderHome();
+      setStatus('สร้างแฟ้มแล้ว ลากไฟล์มาวางบนแฟ้ม หรือกดเข้าไปแล้วเพิ่มไฟล์', 5000);
+    } catch (e) { setStatus('สร้างแฟ้มไม่สำเร็จ'); }
+  }
+  async function renameFolder(id) {
+    const f = folders.get(id); if (!f) return;
+    const name = await askName('เปลี่ยนชื่อแฟ้ม', f.name);
+    if (!name) return;
+    f.name = name;
+    try { await putFolder(f); } catch (e) { setStatus('บันทึกไม่สำเร็จ'); return; }
+    if (curFolder === null) renderHome(); else updateFolderHeader();
+  }
+  function chooseCover(id) { coverTarget = id; closeMenus(); $('#coverIn').click(); }
+  async function setCover(file) {
+    const f = folders.get(coverTarget); if (!f || !file) return;
+    try {
+      const t = await imageThumb(file, COVER_MAX);
+      f.cover = t.thumb; await putFolder(f);
+      if (curFolder === null) renderHome(); else updateFolderHeader();
+      setStatus('เปลี่ยนรูปปกแล้ว');
+    } catch (e) { setStatus('ใช้รูปนี้เป็นปกไม่ได้'); }
+  }
+  async function removeCover() {
+    const f = folders.get(curFolder); if (!f) return;
+    f.cover = null; await putFolder(f); updateFolderHeader(); setStatus('เอารูปปกออกแล้ว');
+  }
+  async function deleteFolder() {
+    const f = folders.get(curFolder); if (!f) return;
+    const n = itemsOf(f.id).length;
+    const msg = n ? `ลบแฟ้ม "${f.name}"?\nไฟล์ข้างใน ${n} ไฟล์จะไม่ถูกลบ แต่จะย้ายไปอยู่หน้าแรก (ไม่ใส่แฟ้ม)`
+                  : `ลบแฟ้ม "${f.name}"?`;
+    if (!confirm(msg)) return;
+    try {
+      for (const m of itemsOf(f.id)) { m.folder = UNFILED; await putMeta(m); }
+      await req(store('folders', 'readwrite').delete(f.id));
+      folders.delete(f.id);
+    } catch (e) { setStatus('ลบแฟ้มไม่สำเร็จ'); return; }
+    curFolder = null;                 // so route() doesn't re-open the deleted folder
+    if (history.state && history.state.f !== undefined) history.back(); else showHome();
+    showHome();
+    setStatus('ลบแฟ้มแล้ว');
+  }
+
+  /* ---------- add / delete / move files ---------- */
+  async function addOne(file, caption, folder = UNFILED, tags = []) {
+    const kind = file.type.startsWith('video/') ? 'video' : (file.type === 'image/gif' ? 'gif' : 'image');
+    let t = { thumb: null, w: 0, h: 0 };
+    try { t = kind === 'video' ? await videoThumb(file) : await imageThumb(file); } catch (e) {}
+    const folderTag = folder !== UNFILED && folders.get(folder) ? [folders.get(folder).name] : [];
+    const meta = { kind, mime: file.type, caption: caption || '', tags: normalizeTags([...(tags || []), ...folderTag]), w: t.w, h: t.h, thumb: t.thumb, tv: TV, added: Date.now(), folder };
+    const blob = new Blob([file], { type: file.type });
+    const id = await new Promise((res, rej) => {
+      const tx = db.transaction(['meta', 'files'], 'readwrite');
+      let newId;
+      tx.objectStore('meta').add(meta).onsuccess = e => {
+        newId = e.target.result;
+        tx.objectStore('files').put({ id: newId, blob });
+      };
+      tx.oncomplete = () => res(newId);
+      tx.onerror = tx.onabort = () => rej(tx.error);
+    });
+    meta.id = id;
+    byId.set(id, meta);
+    return id;
+  }
+  async function addFiles(list, folderId) {
+    const files = [...list].filter(f => /^(image|video)\//.test(f.type));
+    if (!files.length) { setStatus('ไม่รองรับไฟล์ที่เลือก (ใช้ได้เฉพาะรูป GIF และวิดีโอ)'); return; }
+    const ids = []; let n = 0, fail = 0, full = false;
+    for (const f of files) {
+      setStatus(`กำลังเพิ่ม ${++n}/${files.length}`, 0);
+      try { ids.push(await addOne(f, '', folderId)); }
+      catch (e) { fail++; if (e && e.name === 'QuotaExceededError') { full = true; break; } }
+    }
+    if (curFolder === null) {
+      if (folderId === UNFILED) { order = [...shuffle(ids), ...order]; build(); }
+      renderHome(); window.scrollTo(0, 0);
+    } else if (curFolder === folderId) {
+      order = [...shuffle(ids), ...order]; build(); window.scrollTo(0, 0);
+    }
+    setStatus(full ? 'พื้นที่เก็บข้อมูลเต็ม เพิ่มไฟล์ไม่ครบ'
+      : fail ? `เพิ่มแล้ว ${ids.length} ไฟล์ ไม่สำเร็จ ${fail} ไฟล์`
+      : `เพิ่มแล้ว ${ids.length} ไฟล์`);
+  }
+  function removeTile(id) {
+    const el = grid.querySelector(`.tile[data-id="${id}"]`);
+    if (el) { hide(el); tileObserver.unobserve(el); el.remove(); rendered = Math.max(0, rendered - 1); }
+    order = order.filter(x => x !== id);
+    updateCount();
+  }
+  // after the open item leaves this view, show its neighbour (or close the viewer if nothing is left)
+  function afterRemoved(idx) {
+    if (!order.length) { closeViewer(); return; }
+    showInViewer(order[Math.min(idx, order.length - 1)]);
+  }
+  async function deleteItem() {
+    const id = vId; if (id === null) return;
+    if (!confirm('ลบไฟล์นี้ออกจากแกลเลอรี?')) return;
+    const idx = order.indexOf(id);
+    try {
+      await new Promise((res, rej) => {
+        const tx = db.transaction(['meta', 'files'], 'readwrite');
+        tx.objectStore('meta').delete(id); tx.objectStore('files').delete(id);
+        tx.oncomplete = res; tx.onerror = tx.onabort = () => rej(tx.error);
+      });
+    } catch (e) { setStatus('ลบไม่สำเร็จ'); return; }
+    byId.delete(id); removeTile(id);
+    if (curFolder === null) renderHome();
+    afterRemoved(idx);
+  }
+  async function moveItem() {
+    const id = vId, m = byId.get(id); if (!m) return;
+    await saveCaption();
+    const to = await pickFolder(folderOf(m));
+    if (to === null || to === folderOf(m)) return;
+    const idx = order.indexOf(id);
+    try {
+      m.folder = to;
+      if (to !== UNFILED && folders.get(to)) m.tags = normalizeTags([...(m.tags || []), folders.get(to).name]);
+      await putMeta(m);
+    } catch (e) { setStatus('ย้ายไม่สำเร็จ'); return; }
+    removeTile(id);
+    if (curFolder === null) renderHome();
+    const f = folders.get(to);
+    setStatus('ย้ายไป ' + (to === UNFILED ? 'หน้าแรก (ไม่ใส่แฟ้ม)' : '"' + (f ? f.name : '') + '"') + ' แล้ว');
+    afterRemoved(idx);
+  }
+
+  /* ---------- rendering (lazy) ---------- */
+  const tileObserver = new IntersectionObserver(es => {
+    for (const e of es) e.isIntersecting ? show(e.target) : hide(e.target);
+  }, { rootMargin: '900px 0px' });
+
+  async function show(el) {
+    if (el._on) return;
+    el._on = true; const tok = el._tok = (el._tok || 0) + 1;
+    const m = byId.get(+el.dataset.id); if (!m) return;
+    const media = el.querySelector('img,video'); let url = null;
+    try {
+      if (media.tagName === 'VIDEO') { const f = await getFile(m.id); if (f) url = URL.createObjectURL(f); }
+      else if (m.thumb) url = URL.createObjectURL(m.thumb);
+    } catch (e) {}
+    if (!url) return;
+    if (!el._on || el._tok !== tok) { URL.revokeObjectURL(url); return; }
+    el._url = url;
+    media.src = media.tagName === 'VIDEO' ? url + '#t=0.1' : url;
+  }
+  function hide(el) {
+    if (!el._on) return;
+    el._on = false; el._tok = (el._tok || 0) + 1;
+    const media = el.querySelector('img,video');
+    media.removeAttribute('src'); if (media.tagName === 'VIDEO') media.load();
+    if (el._url) { URL.revokeObjectURL(el._url); el._url = null; }
+  }
+  function makeTile(m) {
+    const el = document.createElement('article');
+    el.className = 'tile'; el.dataset.id = m.id;
+    const media = (m.kind === 'video' && !m.thumb)
+      ? '<video muted playsinline preload="metadata" tabindex="-1"></video>'
+      : '<img alt="" decoding="async" draggable="false">';
+    const play = m.kind === 'image' ? '' : '<span class="play">▶</span>';
+    el.innerHTML =
+      '<button class="thumb" type="button" aria-label="เปิดดู">' + media + '<span class="badge"></span>' + play + '<span class="cmark" hidden>✎</span></button>';
+    // clamp very wide / very tall pictures so one picture can't take over a whole row (they get cropped a little in the grid)
+    const ar = m.w && m.h ? Math.min(2.2, Math.max(0.6, m.w / m.h)) : 1.33;
+    el.style.setProperty('--g', ar.toFixed(3));
+    el.querySelector('.thumb').style.setProperty('--ar', ar.toFixed(3));
+    el.querySelector('.badge').textContent = m.kind === 'gif' ? 'GIF' : '';
+    el.querySelector('.cmark').hidden = !(m.caption && m.caption.trim());
+    return el;
+  }
+  function renderMore() {
+    const slice = order.slice(rendered, rendered + BATCH);
+    if (!slice.length) return;
+    const frag = document.createDocumentFragment(), tiles = [];
+    for (const id of slice) { const m = byId.get(id); if (m) { const t = makeTile(m); frag.appendChild(t); tiles.push(t); } }
+    rendered += slice.length;
+    grid.appendChild(frag);
+    tiles.forEach(t => tileObserver.observe(t));
+    sentinelObserver.unobserve($('#sentinel')); sentinelObserver.observe($('#sentinel'));
+  }
+  const sentinelObserver = new IntersectionObserver(es => {
+    if (es.some(e => e.isIntersecting) && rendered < order.length) renderMore();
+  }, { rootMargin: '1500px 0px' });
+  function updateCount() {
+    $('#fcount').textContent = order.length ? order.length + ' ไฟล์' : '';
+    $('#empty').hidden = curFolder === null || order.length > 0;
+    $('#homeEmpty').hidden = folders.size > 0 || itemsOf(UNFILED).length > 0;
+  }
+  function build() {
+    clearGrid();
+    updateCount(); renderMore();
+  }
+
+  /* ---------- tags ---------- */
+  function normalizeTags(tags) {
+    const out = [];
+    for (const raw of (Array.isArray(tags) ? tags : [])) {
+      const tag = String(raw).trim().replace(/^#+/, '').replace(/\\s+/g, '-').slice(0, 32);
+      if (tag && !out.includes(tag)) out.push(tag);
+      if (out.length >= 20) break;
+    }
+    return out;
+  }
+  function renderTags(m) {
+    const host = $('#vTags'); host.innerHTML = '';
+    const tags = normalizeTags(m.tags || []);
+    tags.forEach(tag => {
+      const chip = document.createElement('span'); chip.className = 'tag-chip';
+      const label = document.createElement('span'); label.textContent = '#' + tag;
+      const del = document.createElement('button'); del.type = 'button'; del.textContent = '×'; del.setAttribute('aria-label', 'ลบแท็ค ' + tag);
+      del.onclick = () => { m.tags = normalizeTags(m.tags || []).filter(t => t !== tag); saveTags(m); };
+      chip.append(label, del); host.appendChild(chip);
+    });
+  }
+  async function saveTags(m) {
+    try { await putMeta(m); renderTags(m); vFlash('บันทึกแท็คแล้ว'); }
+    catch (e) { vFlash('บันทึกแท็คไม่สำเร็จ'); }
+  }
+  async function addCurrentTag() {
+    if (vId === null) return;
+    const inp = $('#vtagIn'), raw = inp.value.trim();
+    if (!raw) return;
+    const m = byId.get(vId); if (!m) return;
+    m.tags = normalizeTags([...(m.tags || []), ...raw.split(/[ ,，]+/).map(x => x.trim())]);
+    inp.value = ''; await saveTags(m); $('#tagEditor').hidden = true;
+  }
+
+  /* ---------- captions ---------- */
+  // captions are edited in the viewer (open a picture to write / change its text)
+  const vcap = $('#vcap'), vstate = $('#vstate'), vsave = $('#vsave'), vstage = $('#vstage');
+  let vId = null, vDirty = false, vTimer, vFlashT;
+  function vFlash(t) {
+    vstate.textContent = t; clearTimeout(vFlashT); vFlashT = setTimeout(() => { vstate.textContent = ''; }, 1600);
+  }
+  async function saveCaption() {
+    clearTimeout(vTimer);
+    if (!vDirty || vId === null) return;
+    const m = byId.get(vId); if (!m) return;
+    m.caption = vcap.value;
+    try {
+      await putMeta(m);
+      vDirty = false; vsave.hidden = true; vFlash('บันทึกแล้ว');
+      const t = grid.querySelector(`.tile[data-id="${m.id}"] .cmark`);
+      if (t) t.hidden = !m.caption.trim();
+    } catch (e) { vFlash('บันทึกไม่สำเร็จ'); }
+  }
+  vcap.addEventListener('input', () => {
+    vDirty = true; vsave.hidden = false; vstate.textContent = '';
+    clearTimeout(vTimer); vTimer = setTimeout(saveCaption, 1200);
+  });
+  vcap.addEventListener('blur', saveCaption);
+  vsave.onclick = saveCaption;
+  $('#vtagAdd').onclick = addCurrentTag;
+  $('#tagToggle').onclick = () => {
+    const editor = $('#tagEditor');
+    editor.hidden = !editor.hidden;
+    if (!editor.hidden) $('#vtagIn').focus();
+  };
+  $('#vtagIn').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCurrentTag(); } });
+  $('#vmove').onclick = moveItem;
+  $('#vdel').onclick = deleteItem;
+  grid.addEventListener('click', e => {
+    const el = e.target.closest('.tile'); if (!el) return;
+    if (e.target.closest('.thumb')) openViewer(+el.dataset.id);
+  });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) saveCaption(); });
+  window.addEventListener('pagehide', saveCaption);
+
+  /* ---------- viewer ---------- */
+  /* วนซ้ำแบบไม่สะดุด: ใช้ loop ของเบราว์เซอร์ร่วมกับการเด้งกลับต้นคลิปก่อนจบเล็กน้อย */
+  function gaplessLoop(v) {
+    let raf = 0;
+    const tick = () => {
+      raf = 0;
+      if (!v.isConnected) return;
+      const d = v.duration;
+      if (!v.paused && !v.seeking && isFinite(d) && d > 0.5 && d - v.currentTime < 0.06) {
+        try { v.currentTime = 0; } catch (e) {}
+      }
+      if (!v.paused) raf = requestAnimationFrame(tick);
+    };
+    const start = () => { if (!raf) raf = requestAnimationFrame(tick); };
+    v.addEventListener('playing', start);
+    v.addEventListener('play', start);
+    v.addEventListener('ended', () => { try { v.currentTime = 0; v.play(); } catch (e) {} });
+  }
+  let curUrl = null, pushed = false, zoom = 1, pinchStart = 0, pinchZoom = 1;
+  function setZoom(value) {
+    zoom = Math.max(1, Math.min(5, value));
+    const img = vstage.querySelector('img');
+    if (img) img.style.transform = `scale(${zoom})`;
+  }
+
+
+  async function showInViewer(id) {
+    await saveCaption();
+    const m = byId.get(id), f = await getFile(id); if (!m || !f) return;
+    clearViewerMedia();
+    vId = id; vDirty = false; vsave.hidden = true; vstate.textContent = '';
+    vcap.value = m.caption || '';
+    $('#vtagIn').value = ''; $('#tagEditor').hidden = true; renderTags(m);
+    zoom = 1;
+    curUrl = URL.createObjectURL(f);
+    const el = document.createElement(m.kind === 'video' ? 'video' : 'img');
+    if (m.kind === 'video') { el.defaultMuted = true; el.muted = true; el.controls = true; el.autoplay = true; el.playsInline = true; el.loop = true; gaplessLoop(el); }
+    else { el.alt = ''; el.style.transition = 'transform .12s ease'; }
+    el.src = curUrl;
+    vstage.appendChild(el);
+    const i = order.indexOf(id);
+    $('#prevV').hidden = i <= 0; $('#nextV').hidden = i < 0 || i >= order.length - 1;
+  }
+  async function openViewer(id) {
+    await showInViewer(id);
+    if (vId !== id) return;
+    viewer.hidden = false;
+    try { history.pushState({ v: 1, f: curFolder }, ''); pushed = true; } catch (e) { pushed = false; }
+  }
+  function stepViewer(d) {
+    const i = order.indexOf(vId), j = i + d;
+    if (i < 0 || j < 0 || j >= order.length) return;
+    showInViewer(order[j]);
+  }
+  $('#prevV').onclick = () => stepViewer(-1);
+  $('#nextV').onclick = () => stepViewer(1);
+  function clearViewerMedia() {
+    vstage.querySelectorAll('img,video').forEach(n => {
+      if (n.tagName === 'VIDEO') { n.pause(); n.removeAttribute('src'); n.load(); }
+      n.remove();
+    });
+    if (curUrl) { URL.revokeObjectURL(curUrl); curUrl = null; }
+  }
+  function closeViewer(fromPop) {
+    if (viewer.hidden) return;
+    saveCaption();
+    clearViewerMedia(); viewer.hidden = true; vId = null;
+    if (pushed && !fromPop) { pushed = false; history.back(); } else pushed = false;
+  }
+  vstage.addEventListener('wheel', e => {
+    if (!vstage.querySelector('img')) return;
+    e.preventDefault(); setZoom(zoom + (e.deltaY < 0 ? 0.15 : -0.15));
+  }, { passive: false });
+  vstage.addEventListener('click', e => { if (e.target === vstage) closeViewer(); });
+  document.addEventListener('keydown', e => {
+    if (viewer.hidden) return;
+    if (e.key === 'Escape') { if (!$('#nameDlg').open && !$('#pickDlg').open) closeViewer(); return; }
+    if (e.target.matches && e.target.matches('textarea,input,select')) return;
+    if (e.key === 'ArrowLeft') stepViewer(-1);
+    else if (e.key === 'ArrowRight') stepViewer(1);
+  });
+  let tx0 = 0, ty0 = 0, pinching = false, lastTapAt = 0, lastTapX = 0, lastTapY = 0;
+  vstage.addEventListener('dblclick', e => {
+    if (e.target.tagName === 'IMG') { e.preventDefault(); setZoom(1); }
+  });
+  const touchDistance = ts => Math.hypot(ts[0].clientX - ts[1].clientX, ts[0].clientY - ts[1].clientY);
+  vstage.addEventListener('touchstart', e => {
+    if (e.touches.length === 2 && vstage.querySelector('img')) { pinching = true; pinchStart = touchDistance(e.touches); pinchZoom = zoom; }
+    else if (e.touches.length === 1) { const t = e.changedTouches[0]; tx0 = t.clientX; ty0 = t.clientY; }
+  }, { passive: true });
+  vstage.addEventListener('touchmove', e => {
+    if (pinching && e.touches.length === 2) { e.preventDefault(); setZoom(pinchZoom * touchDistance(e.touches) / Math.max(1, pinchStart)); }
+  }, { passive: false });
+  vstage.addEventListener('touchend', e => {
+    if (e.touches.length < 2 && pinching) { pinching = false; return; }
+    if (pinching || e.target.tagName === 'VIDEO') return;
+    const t = e.changedTouches[0], dx = t.clientX - tx0, dy = t.clientY - ty0;
+    const now = Date.now();
+    if (e.target.tagName === 'IMG' && Math.abs(dx) < 18 && Math.abs(dy) < 18) {
+      if (now - lastTapAt < 330 && Math.hypot(t.clientX - lastTapX, t.clientY - lastTapY) < 32) {
+        setZoom(1); lastTapAt = 0; return;
+      }
+      lastTapAt = now; lastTapX = t.clientX; lastTapY = t.clientY;
+    }
+    if (Math.abs(dx) > 60 && Math.abs(dy) < 50) stepViewer(dx < 0 ? 1 : -1);
+  }, { passive: true });
+
+  /* ---------- backup ---------- */
+  async function buildBackup() {
+    const ids = [...byId.keys()].sort((a, b) => a - b);
+    const fl = [...folders.values()].sort((a, b) => a.id - b.id);
+    if (!ids.length && !fl.length) { setStatus('ยังไม่มีข้อมูลให้ส่งออก'); return null; }
+    const enc = new TextEncoder(), parts = [enc.encode('GALV2\n')];
+    const push = (h, b) => {
+      const hb = enc.encode(JSON.stringify(h));
+      const len = new Uint8Array(4); new DataView(len.buffer).setUint32(0, hb.length);
+      parts.push(len, hb); if (b) parts.push(b);
+    };
+    for (const f of fl) push({ t: 'f', id: f.id, name: f.name, mime: f.cover ? f.cover.type : '', size: f.cover ? f.cover.size : 0 }, f.cover);
+    let n = 0;
+    for (const id of ids) {
+      setStatus(`กำลังเตรียมไฟล์สำรอง ${++n}/${ids.length}`, 0);
+      const m = byId.get(id), f = await getFile(id); if (!f) continue;
+      push({ t: 'i', folder: folderOf(m), mime: m.mime, caption: m.caption, tags: normalizeTags(m.tags || []), size: f.size }, f);
+    }
+    return new Blob(parts, { type: 'application/octet-stream' });
+  }
+  function downloadBlob(blob, name) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+  async function exportAll() {
+    const blob = await buildBackup(); if (!blob) return;
+    downloadBlob(blob, 'gallery-backup.galv');
+    setStatus('ส่งออกแล้ว');
+  }
+
+  /* ---------- backup as text code (any length) ---------- */
+  const CODE_PREFIX = 'GALVCODE1:';
+  const B64_IN = 3 * 262144;          // bytes per chunk when encoding (multiple of 3)
+  let codeChunks = null;
+  async function blobToCode(blob) {
+    const chunks = [CODE_PREFIX];
+    for (let off = 0, k = 0; off < blob.size; off += B64_IN, k++) {
+      const bytes = new Uint8Array(await blob.slice(off, off + B64_IN).arrayBuffer());
+      let bin = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+      chunks.push(btoa(bin));
+      if (k % 8 === 0) { setStatus(`กำลังแปลงเป็นโค้ด ${Math.min(100, Math.round(off / blob.size * 100))}%`, 0); await new Promise(r => setTimeout(r)); }
+    }
+    return chunks;
+  }
+  function codeToBlob(text) {
+    text = text.replace(/\s+/g, '');
+    if (!text.startsWith(CODE_PREFIX)) throw new Error('bad');
+    text = text.slice(CODE_PREFIX.length);
+    const parts = [], STEP = 4 * 262144;
+    for (let i = 0; i < text.length; i += STEP) {
+      const bin = atob(text.slice(i, i + STEP));
+      const u = new Uint8Array(bin.length);
+      for (let j = 0; j < bin.length; j++) u[j] = bin.charCodeAt(j);
+      parts.push(u);
+    }
+    return new Blob(parts, { type: 'application/octet-stream' });
+  }
+  async function exportCode() {
+    const blob = await buildBackup(); if (!blob) return;
+    try {
+      codeChunks = await blobToCode(blob);
+    } catch (e) { setStatus('แปลงเป็นโค้ดไม่สำเร็จ (ข้อมูลอาจใหญ่เกินหน่วยความจำ)'); return; }
+    const len = codeChunks.reduce((s, c) => s + c.length, 0);
+    $('#codeSize').textContent = '(' + (len / 1048576).toFixed(1) + ' MB ตัวอักษร)';
+    setStatus('');
+    $('#codeOutDlg').showModal();
+  }
+  async function importFromCode(text) {
+    let blob;
+    try { blob = codeToBlob(text); }
+    catch (e) { setStatus('โค้ดไม่ถูกต้อง หรือวางมาไม่ครบ'); return; }
+    await importBackup(blob);
+  }
+  async function importBackup(file) {
+    try {
+      const magic = await file.slice(0, 6).text();
+      if (magic !== 'GALV1\n' && magic !== 'GALV2\n') throw new Error('bad');
+      if (!confirm('การนำเข้าจะเขียนทับข้อมูลเดิมทั้งหมดในแกลเลอรีนี้ (รูป วิดีโอ และแฟ้มที่มีอยู่จะถูกแทนที่ด้วยข้อมูลในไฟล์สำรอง)\nทำต่อไหม?')) { setStatus('ยกเลิกการนำเข้า'); return; }
+      setStatus('กำลังล้างข้อมูลเดิม...', 0);
+      await new Promise((res, rej) => {
+        const tx = db.transaction(['meta', 'files', 'folders'], 'readwrite');
+        tx.objectStore('meta').clear(); tx.objectStore('files').clear(); tx.objectStore('folders').clear();
+        tx.oncomplete = res; tx.onerror = tx.onabort = () => rej(tx.error);
+      });
+      byId.clear(); folders.clear(); curFolder = null;
+      let off = 6, n = 0, count = 0; const map = new Map();
+      while (off < file.size) {
+        const len = new DataView(await file.slice(off, off + 4).arrayBuffer()).getUint32(0); off += 4;
+        const head = JSON.parse(await file.slice(off, off + len).text()); off += len;
+        const blob = file.slice(off, off + head.size, head.mime); off += head.size;
+        setStatus(`กำลังนำเข้า ${++n}`, 0);
+        if (head.t === 'f') {
+          const f = { name: head.name || 'แฟ้ม', cover: head.size ? new Blob([blob], { type: head.mime }) : null, created: Date.now() + n };
+          f.id = await req(store('folders', 'readwrite').add(f));
+          folders.set(f.id, f); map.set(head.id, f.id);
+        } else {
+          const fid = head.t === 'i' && head.folder ? (map.get(head.folder) || UNFILED) : UNFILED;
+          await addOne(blob, head.caption, fid, head.tags || []); count++;
+        }
+      }
+      showHome();
+      setStatus(`นำเข้าแล้ว ${map.size} แฟ้ม ${count} ไฟล์`);
+    } catch (e) { setStatus('ไฟล์สำรองไม่ถูกต้อง หรืออ่านไม่สำเร็จ'); }
+  }
+
+  /* ---------- storage manager ---------- */
+  async function refreshStorageInfo() {
+    const loc = $('#storageLocation'), usage = $('#storageUsage');
+    loc.textContent = 'IndexedDB · gallery-v1 · พื้นที่ข้อมูลของเว็บไซต์บนอุปกรณ์นี้';
+    try {
+      if (navigator.storage && navigator.storage.estimate) {
+        const q = await navigator.storage.estimate();
+        const fmt = n => n < 1048576 ? (n/1024).toFixed(1)+' KB' : (n/1048576).toFixed(2)+' MB';
+        usage.textContent = fmt(q.usage || 0) + (q.quota ? ' / ' + fmt(q.quota) : '') + ' (โดยประมาณ)';
+      } else usage.textContent = 'เบราว์เซอร์นี้ไม่เปิดเผยข้อมูลพื้นที่จัดเก็บ';
+    } catch(e) { usage.textContent = 'ไม่สามารถอ่านข้อมูลพื้นที่จัดเก็บได้'; }
+  }
+  $('#storageOpen').onclick = async () => { closeMenus(); $('#storageDlg').showModal(); await refreshStorageInfo(); };
+  $('#storageRefresh').onclick = refreshStorageInfo;
+  $('#storageClose').onclick = () => $('#storageDlg').close();
+
+  /* ---------- wiring ---------- */
+  const fileIn = $('#fileIn'), backupIn = $('#backupIn'), coverIn = $('#coverIn');
+  $('#newFolder').onclick = createFolder;
+  $('#back').onclick = leaveFolder;
+  $('#add').onclick = () => fileIn.click();
+  $('#addHome').onclick = () => fileIn.click();
+  fileIn.onchange = () => { const t = curFolder === null ? UNFILED : curFolder; addFiles(fileIn.files, t).finally(() => { fileIn.value = ''; }); };
+  $('#shuffle').onclick = () => { shuffle(order); build(); window.scrollTo(0, 0); };
+  $('#export').onclick = () => { closeMenus(); exportAll(); };
+  $('#import').onclick = () => { closeMenus(); backupIn.click(); };
+  backupIn.onchange = () => { if (backupIn.files[0]) importBackup(backupIn.files[0]).finally(() => { backupIn.value = ''; }); };
+  $('#exportCode').onclick = () => { closeMenus(); exportCode(); };
+  $('#importCode').onclick = () => { closeMenus(); $('#codeIn').value = ''; $('#codeInDlg').showModal(); };
+  $('#codeOutNo').onclick = () => { $('#codeOutDlg').close(); codeChunks = null; };
+  $('#codeSave').onclick = () => {
+    if (!codeChunks) return;
+    downloadBlob(new Blob(codeChunks, { type: 'text/plain' }), 'gallery-backup-code.txt');
+    setStatus('บันทึกไฟล์โค้ดแล้ว');
+  };
+  $('#codeCopy').onclick = async () => {
+    if (!codeChunks) return;
+    try { await navigator.clipboard.writeText(codeChunks.join('')); setStatus('คัดลอกโค้ดแล้ว'); }
+    catch (e) { setStatus('คัดลอกไม่ได้ (โค้ดอาจยาวเกิน) ให้กด "บันทึกเป็นไฟล์ข้อความ" แทน', 6000); }
+  };
+  $('#codeInNo').onclick = () => $('#codeInDlg').close();
+  $('#codeInOk').onclick = () => {
+    const t = $('#codeIn').value; $('#codeInDlg').close();
+    if (t.trim()) importFromCode(t); else setStatus('ยังไม่ได้วางโค้ด');
+  };
+  $('#codeFile').onclick = () => $('#codeFileIn').click();
+  $('#codeFileIn').onchange = async () => {
+    const f = $('#codeFileIn').files[0]; $('#codeFileIn').value = '';
+    if (!f) return;
+    $('#codeInDlg').close();
+    importFromCode(await f.text());
+  };
+  $('#mRename').onclick = () => { closeMenus(); renameFolder(curFolder); };
+  $('#mCover').onclick = () => chooseCover(curFolder);
+  $('#mCoverOff').onclick = () => { closeMenus(); removeCover(); };
+  $('#mDelete').onclick = () => { closeMenus(); deleteFolder(); };
+  coverIn.onchange = () => { const f = coverIn.files[0]; setCover(f).finally(() => { coverIn.value = ''; }); };
+  $('#closeV').onclick = () => closeViewer();
+
+  let dragDepth = 0;
+  const clearOver = () => fgrid.querySelectorAll('.over').forEach(x => x.classList.remove('over'));
+  const hasFiles = e => e.dataTransfer && [...e.dataTransfer.types].includes('Files');
+  window.addEventListener('dragenter', e => { if (hasFiles(e)) { dragDepth++; if (curFolder !== null) $('#drop').hidden = false; } });
+  window.addEventListener('dragleave', () => { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) { $('#drop').hidden = true; clearOver(); } });
+  window.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (curFolder === null && hasFiles(e)) {
+      const card = e.target.closest && e.target.closest('.fcard');
+      clearOver(); if (card) card.classList.add('over');
+    }
+  });
+  window.addEventListener('drop', e => {
+    e.preventDefault(); dragDepth = 0; $('#drop').hidden = true; clearOver();
+    if (!e.dataTransfer || !e.dataTransfer.files.length) return;
+    if (curFolder === null) {
+      const card = e.target.closest && e.target.closest('.fcard');
+      if (card) addFiles(e.dataTransfer.files, +card.dataset.id);
+      else addFiles(e.dataTransfer.files, UNFILED);
+    } else addFiles(e.dataTransfer.files, curFolder);
+  });
+
+  /* ---------- re-make older thumbnails ---------- */
+  async function upgradeThumbs() {
+    const todo = [...byId.values()].filter(m => m.tv !== TV);
+    let n = 0;
+    for (const m of todo) {
+      setStatus(`กำลังปรับภาพตัวอย่าง ${++n}/${todo.length}`, 0);
+      try {
+        const f = await getFile(m.id); if (!f) continue;
+        const t = m.kind === 'video' ? await videoThumb(f) : await imageThumb(f);
+        if (t.thumb) { m.thumb = t.thumb; m.w = t.w; m.h = t.h; }
+        m.tv = TV;
+        await putMeta(m);
+        const old = grid.querySelector(`.tile[data-id="${m.id}"]`);
+        if (old) {
+          hide(old); tileObserver.unobserve(old);
+          const nt = makeTile(m); old.replaceWith(nt); tileObserver.observe(nt);
+        }
+      } catch (e) {}
+      await new Promise(r => setTimeout(r, 60));
+    }
+    if (todo.length) { setStatus('ปรับภาพตัวอย่างเสร็จแล้ว'); if (curFolder === null) renderHome(); }
+  }
+
+  /* ---------- start ---------- */
+  (async () => {
+    try {
+      db = await openDB();
+      try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+      (await req(store('meta').getAll())).forEach(m => byId.set(m.id, m));
+      (await req(store('folders').getAll())).forEach(f => folders.set(f.id, f));
+      showHome();
+      upgradeThumbs();
+    } catch (e) {
+      setStatus('เปิดที่เก็บข้อมูลในเบราว์เซอร์นี้ไม่ได้ (ลองเปิดไฟล์ด้วย Chrome หรือ Edge แบบไม่ใช่โหมดไม่ระบุตัวตน)', 0);
+    }
+  })();
+
+  // PWA ทำงานเมื่อเผยแพร่ผ่าน HTTPS หรือ localhost
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    window.addEventListener('load', async () => {
+      let hadController = !!navigator.serviceWorker.controller;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (hadController) location.reload();
+        hadController = true;
+      });
+      try {
+        const registration = await navigator.serviceWorker.register('./sw.js');
+        registration.update().catch(() => {}); // ตรวจเวอร์ชันใหม่ทันทีเมื่อเปิดแอป
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') registration.update().catch(() => {});
+        });
+      } catch (e) {}
+    });
+  }
+})();
+</script>
+</body>
+</html>
