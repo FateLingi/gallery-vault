@@ -1,14 +1,14 @@
 {
   "id": "./",
-  "name": "แกลเลอรีส่วนตัว",
-  "short_name": "แกลเลอรี",
-  "description": "แกลเลอรีส่วนตัวสำหรับจัดเก็บรูปภาพ GIF และวิดีโอ",
+  "name": "VELORA",
+  "short_name": "VELORA",
+  "description": "VELORA — your private visual gallery",
   "lang": "th",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#100b16",
-  "theme_color": "#100b16",
+  "background_color": "#090608",
+  "theme_color": "#090608",
   "orientation": "any",
   "icons": [
     {

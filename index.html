@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>แกลเลอรี</title>
-<meta name="theme-color" content="#100b16">
-<meta name="description" content="แกลเลอรีส่วนตัวสำหรับจัดเก็บรูปภาพ GIF และวิดีโอ">
+<title>VELORA</title>
+<meta name="theme-color" content="#090608">
+<meta name="description" content="VELORA — your private visual gallery">
 <link rel="manifest" href="./manifest.webmanifest">
 <style>
 :root{
-  --bg:#17131d; --panel:#211b29; --panel2:#302638; --text:#f4edf2; --muted:#b5a6b6;
-  --accent:#d8b879; --on-accent:#21180f; --danger:#ff9a9a; --r:10px;
+  --bg:#090608; --panel:#160b10; --panel2:#241018; --text:#f7eef0; --muted:#c2aeb4;
+  --accent:#d8b879; --on-accent:#160b0d; --danger:#ff7d89; --r:10px;
   --viewer-bg:rgba(10,7,13,.97); --header-bg:rgba(23,19,29,.94);
   --glow:rgba(216,184,121,.18); --ambient1:rgba(85,42,91,.20); --ambient2:rgba(150,91,65,.10);
   color-scheme:dark;
@@ -166,7 +166,7 @@ dialog{
   background:var(--panel); color:var(--text); border:1px solid var(--panel2); border-radius:14px;
   padding:18px; width:min(92vw,360px);
 }
-dialog::backdrop{background:rgba(0,0,0,.6)}
+dialog::backdrop{background:rgba(0,0,0,.6)}\n.storage-card{background:var(--bg);border:1px solid var(--panel2);border-radius:9px;padding:10px 12px;margin:8px 0}.storage-card p{margin:4px 0 0;color:var(--muted);overflow-wrap:anywhere}
 dialog label{display:block; margin-bottom:10px; font-weight:600}
 dialog input,dialog select{
   width:100%; background:var(--bg); color:var(--text); border:1px solid var(--panel2); border-radius:8px;
@@ -193,7 +193,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
 
 <!-- header: home -->
 <header id="hHome">
-  <h1>แกลเลอรี <small id="count"></small></h1>
+  <h1>VELORA <small id="count"></small></h1>
   <div class="actions">
     <button id="newFolder" class="primary" type="button">+ สร้างแฟ้ม</button>
     <button id="addHome" type="button">เพิ่มไฟล์</button>
@@ -203,12 +203,12 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
         <button id="exportCode" type="button">ส่งออกเป็นโค้ด</button>
         <button id="importCode" type="button">นำเข้าจากโค้ด</button>
         <button id="export" type="button">ส่งออกไฟล์สำรอง (.galv)</button>
-        <button id="import" type="button">นำเข้าไฟล์สำรอง (.galv)</button>
+        <button id="import" type="button">นำเข้าไฟล์สำรอง (.galv)</button>\n        <button id="storageOpen" type="button">Storage Manager · พื้นที่จัดเก็บ</button>
         <label class="theme-label" for="themeSelect">ธีมสีแอป</label>
         <select id="themeSelect" class="theme-select">
-          <option value="mystery">ลึกลับ · ดำ/ม่วง/แชมเปญ</option>
-          <option value="passion">เร่าร้อน · แดงเข้ม</option>
-          <option value="romance">โรแมนติก · ชมพู/ทองอ่อน</option>
+          <option value="mystery">MYSTERY · ดำ/แดงไวน์/แชมเปญ</option>
+          <option value="passion">PASSION · ดำ/แดงเชอร์รี</option>
+          <option value="romance">ROMANCE · ดำ/กุหลาบ/แชมเปญ</option>
         </select>
       </div>
     </details>
@@ -281,6 +281,15 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
 </div>
 <div id="drop" hidden>วางไฟล์เพื่อเพิ่มลงในแฟ้มนี้</div>
 
+<dialog id="storageDlg" style="width:min(92vw,520px)">
+  <label>VELORA Storage Manager</label>
+  <p style="color:var(--muted);margin:0 0 12px">ตรวจสอบพื้นที่และตำแหน่งจัดเก็บข้อมูลของแอป</p>
+  <div class="storage-card"><strong>ตำแหน่งปัจจุบัน</strong><p id="storageLocation">กำลังตรวจสอบ...</p></div>
+  <div class="storage-card"><strong>พื้นที่ใช้งานของเว็บไซต์</strong><p id="storageUsage">กำลังคำนวณ...</p></div>
+  <div class="storage-card"><strong>ข้อมูลที่เก็บในเครื่องนี้</strong><p>รูปภาพ วิดีโอ GIF แฟ้ม แท็ก คำบรรยาย และข้อมูลแกลเลอรี จัดเก็บใน IndexedDB ของเบราว์เซอร์บนอุปกรณ์นี้</p></div>
+  <p style="color:var(--muted);font-size:.88rem">หมายเหตุ: ตำแหน่ง IndexedDB ถูกควบคุมโดยระบบปฏิบัติการและเบราว์เซอร์ การเลือกโฟลเดอร์ปลายทางโดยตรงยังไม่รองรับในทุกอุปกรณ์ การย้ายข้อมูลควรใช้ส่งออก/นำเข้าไฟล์สำรอง</p>
+  <div class="dbtn"><button type="button" id="storageRefresh">ตรวจสอบอีกครั้ง</button><button type="button" id="storageClose" class="primary">ปิด</button></div>
+</dialog>
 <dialog id="nameDlg">
   <label id="nameT" for="nameIn"></label>
   <input id="nameIn" type="text" maxlength="60" autocomplete="off">
@@ -330,10 +339,10 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   /* ---------- theme presets ---------- */
   const themePresets = {
     mystery: {
-      bg:'#100b16', panel:'#211426', panel2:'#39213d', text:'#fff2f5', muted:'#c0a7bd',
-      accent:'#e8c27c', onAccent:'#26160d', danger:'#ff8eaa',
+      bg:'#100709', panel:'#211014', panel2:'#3a1a22', text:'#fff2f3', muted:'#c7aeb2',
+      accent:'#dfbd83', onAccent:'#26160d', danger:'#ff8eaa',
       viewer:'rgba(8,4,12,.985)', header:'rgba(16,11,22,.94)',
-      glow:'rgba(210,155,230,.25)', ambient1:'rgba(112,42,126,.34)', ambient2:'rgba(189,126,83,.17)'
+      glow:'rgba(223,189,131,.22)', ambient1:'rgba(112,18,39,.30)', ambient2:'rgba(189,126,83,.14)'
     },
     passion: {
       bg:'#16070d', panel:'#2a0b16', panel2:'#501020', text:'#fff0f1', muted:'#d5a0a9',
@@ -1079,6 +1088,22 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
       setStatus(`นำเข้าแล้ว ${map.size} แฟ้ม ${count} ไฟล์`);
     } catch (e) { setStatus('ไฟล์สำรองไม่ถูกต้อง หรืออ่านไม่สำเร็จ'); }
   }
+
+  /* ---------- storage manager ---------- */
+  async function refreshStorageInfo() {
+    const loc = $('#storageLocation'), usage = $('#storageUsage');
+    loc.textContent = 'IndexedDB · gallery-v1 · พื้นที่ข้อมูลของเว็บไซต์บนอุปกรณ์นี้';
+    try {
+      if (navigator.storage && navigator.storage.estimate) {
+        const q = await navigator.storage.estimate();
+        const fmt = n => n < 1048576 ? (n/1024).toFixed(1)+' KB' : (n/1048576).toFixed(2)+' MB';
+        usage.textContent = fmt(q.usage || 0) + (q.quota ? ' / ' + fmt(q.quota) : '') + ' (โดยประมาณ)';
+      } else usage.textContent = 'เบราว์เซอร์นี้ไม่เปิดเผยข้อมูลพื้นที่จัดเก็บ';
+    } catch(e) { usage.textContent = 'ไม่สามารถอ่านข้อมูลพื้นที่จัดเก็บได้'; }
+  }
+  $('#storageOpen').onclick = async () => { closeMenus(); $('#storageDlg').showModal(); await refreshStorageInfo(); };
+  $('#storageRefresh').onclick = refreshStorageInfo;
+  $('#storageClose').onclick = () => $('#storageDlg').close();
 
   /* ---------- wiring ---------- */
   const fileIn = $('#fileIn'), backupIn = $('#backupIn'), coverIn = $('#coverIn');
