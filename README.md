@@ -1,2 +1,2 @@
-# lust-vault
-Gallery 
+# galley-vault
+Just Gallery.
