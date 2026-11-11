@@ -187,6 +187,10 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   #vtagAdd{padding:6px 10px}
   #fgrid{grid-template-columns:repeat(2,1fr); gap:16px 12px}
 }
+ 
+  #fxCanvas{position:absolute;z-index:5;pointer-events:auto;touch-action:none;cursor:crosshair}
+  #imageFxBar button[data-active="true"]{border-color:var(--accent);background:var(--panel2);color:var(--text)}
+  #imageFxBar[hidden],#fxHint[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -267,6 +271,16 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
       <div id="vTags" aria-label="แท็คของไฟล์นี้"></div>
       <button id="tagToggle" class="tag-plus" type="button" aria-label="เพิ่มแท็ค" title="เพิ่มแท็ค">＋</button>
     </div>
+    <div id="imageFxBar" class="tag-strip" hidden style="margin-top:8px;gap:6px;flex-wrap:wrap">
+      <button type="button" class="tag-plus" data-fx="wet">💧 Wet</button>
+      <button type="button" class="tag-plus" data-fx="dry">☀ Dry</button>
+      <button type="button" class="tag-plus" data-fx="flow">↘ Flow</button>
+      <button type="button" class="tag-plus" data-fx="splash">✧ Splash</button>
+      <button type="button" class="tag-plus" data-fx="off">ปิดเครื่องมือ</button>
+      <button type="button" class="tag-plus" id="fxClear">ล้างเอฟเฟกต์</button>
+      <button type="button" class="tag-plus" id="fxExport">บันทึกภาพใหม่</button>
+    </div>
+    <div id="fxHint" style="font-size:.78rem;color:var(--muted);margin-top:5px" hidden>เลือกเครื่องมือ แล้วลากหรือแตะบนภาพ · Flow ใช้การลากกำหนดทิศทาง · สีของน้ำเป็นสีขาว</div>
     <div class="tag-editor" id="tagEditor" hidden>
       <input id="vtagIn" type="text" maxlength="40" placeholder="เพิ่มแท็ค เช่น #เที่ยว">
       <button id="vtagAdd" type="button">เพิ่ม</button>
@@ -900,6 +914,81 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   }
 
 
+
+  // Image-only visual effects. Original media is never modified.
+  let fxCanvas = null, fxCtx = null, fxTool = 'off', fxDrawing = false, fxLast = null;
+  function fxSetup(img) {
+    const bar = $('#imageFxBar'), hint = $('#fxHint');
+    bar.hidden = !img; hint.hidden = !img;
+    if (!img) { if (fxCanvas) fxCanvas.remove(); fxCanvas = fxCtx = null; fxTool = 'off'; return; }
+    if (!fxCanvas) {
+      fxCanvas = document.createElement('canvas'); fxCanvas.id = 'fxCanvas';
+      vstage.appendChild(fxCanvas); fxCtx = fxCanvas.getContext('2d');
+      fxCanvas.addEventListener('pointerdown', fxStart);
+      fxCanvas.addEventListener('pointermove', fxMove);
+      fxCanvas.addEventListener('pointerup', fxEnd);
+      fxCanvas.addEventListener('pointercancel', fxEnd);
+    }
+    requestAnimationFrame(fxPosition);
+  }
+  function fxPosition() {
+    const img = vstage.querySelector('img'); if (!img || !fxCanvas) return;
+    const r = img.getBoundingClientRect(), s = vstage.getBoundingClientRect();
+    fxCanvas.style.left = (r.left-s.left)+'px'; fxCanvas.style.top = (r.top-s.top)+'px';
+    fxCanvas.style.width = r.width+'px'; fxCanvas.style.height = r.height+'px';
+    const w=Math.max(1,Math.round(r.width*devicePixelRatio)), h=Math.max(1,Math.round(r.height*devicePixelRatio));
+    if (fxCanvas.width!==w || fxCanvas.height!==h) {
+      const old=document.createElement('canvas'); old.width=fxCanvas.width; old.height=fxCanvas.height;
+      old.getContext('2d').drawImage(fxCanvas,0,0);
+      fxCanvas.width=w; fxCanvas.height=h;
+      if(old.width&&old.height) fxCtx.drawImage(old,0,0,w,h);
+    }
+    fxCtx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  }
+  function fxPoint(e) { const r=fxCanvas.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; }
+  function fxStart(e) {
+    if(fxTool==='off') return;
+    e.preventDefault(); fxCanvas.setPointerCapture(e.pointerId); fxDrawing=true; fxLast=fxPoint(e);
+    if(fxTool==='splash') { fxSplash(fxLast); fxDrawing=false; return; }
+    if(fxTool==='wet') fxWet(fxLast);
+  }
+  function fxMove(e) {
+    if(!fxDrawing || !fxLast) return;
+    const p=fxPoint(e);
+    if(fxTool==='wet') fxWet(p);
+    if(fxTool==='dry') { fxCtx.save(); fxCtx.globalCompositeOperation='destination-out'; fxCtx.beginPath(); fxCtx.lineWidth=34; fxCtx.lineCap='round'; fxCtx.moveTo(fxLast.x,fxLast.y); fxCtx.lineTo(p.x,p.y); fxCtx.stroke(); fxCtx.restore(); }
+    if(fxTool==='flow') { fxCtx.clearRect(0,0,fxCanvas.width,fxCanvas.height); fxCtx.beginPath(); fxCtx.moveTo(fxLast.x,fxLast.y); fxCtx.lineTo(p.x,p.y); fxCtx.strokeStyle='rgba(255,255,255,.9)'; fxCtx.lineWidth=5; fxCtx.lineCap='round'; fxCtx.shadowColor='#fff'; fxCtx.shadowBlur=8; fxCtx.stroke(); fxCtx.shadowBlur=0; fxCtx.beginPath(); fxCtx.arc(p.x,p.y,4,0,Math.PI*2); fxCtx.fillStyle='#fff'; fxCtx.fill(); }
+    fxLast=p;
+  }
+  function fxEnd(){fxDrawing=false;fxLast=null;}
+  function fxWet(p) {
+    const r=5+Math.random()*9;
+    const g=fxCtx.createRadialGradient(p.x-r*.35,p.y-r*.4,1,p.x,p.y,r);
+    g.addColorStop(0,'rgba(255,255,255,.78)'); g.addColorStop(.35,'rgba(210,235,245,.34)'); g.addColorStop(1,'rgba(255,255,255,.04)');
+    fxCtx.fillStyle=g; fxCtx.beginPath(); fxCtx.ellipse(p.x,p.y,r*.72,r,Math.random(),0,Math.PI*2); fxCtx.fill();
+    fxCtx.fillStyle='rgba(255,255,255,.8)'; fxCtx.beginPath(); fxCtx.arc(p.x-r*.22,p.y-r*.3,Math.max(1,r*.13),0,Math.PI*2); fxCtx.fill();
+  }
+  function fxSplash(p) {
+    for(let i=0;i<28;i++){const a=Math.random()*Math.PI*2, d=5+Math.random()*35, r=1+Math.random()*3;
+      const x=p.x+Math.cos(a)*d,y=p.y+Math.sin(a)*d;
+      fxCtx.beginPath();fxCtx.arc(x,y,r,0,Math.PI*2);fxCtx.fillStyle='rgba(255,255,255,'+(0.45+Math.random()*.5)+')';fxCtx.shadowColor='#fff';fxCtx.shadowBlur=5;fxCtx.fill();
+    } fxCtx.shadowBlur=0;
+    fxCtx.beginPath();fxCtx.arc(p.x,p.y,4,0,Math.PI*2);fxCtx.fillStyle='#fff';fxCtx.fill();
+  }
+  document.querySelectorAll('[data-fx]').forEach(b=>b.addEventListener('click',()=>{
+    fxTool=b.dataset.fx; document.querySelectorAll('[data-fx]').forEach(x=>x.dataset.active=String(x===b));
+    $('#fxHint').textContent=({wet:'ลากนิ้วหรือเมาส์เพื่อแต้มหยดน้ำและความเปียก',dry:'ลากเพื่อลบเอฟเฟกต์น้ำในบริเวณนั้น',flow:'ลากจากจุดเริ่มต้นไปยังทิศทางที่ต้องการให้น้ำสีขาวไหล',splash:'แตะจุดที่ต้องการสร้างละอองน้ำสีขาว',off:'ปิดเครื่องมือเอฟเฟกต์'}[fxTool]||'');
+    if(fxCanvas) fxCanvas.style.pointerEvents=fxTool==='off'?'none':'auto';
+  }));
+  $('#fxClear').onclick=()=>{if(fxCtx&&fxCanvas)fxCtx.clearRect(0,0,fxCanvas.width,fxCanvas.height);};
+  $('#fxExport').onclick=()=>{
+    const img=vstage.querySelector('img'); if(!img||!fxCanvas)return;
+    const c=document.createElement('canvas'); c.width=img.naturalWidth; c.height=img.naturalHeight;
+    const x=c.getContext('2d'); x.drawImage(img,0,0,c.width,c.height); x.drawImage(fxCanvas,0,0,c.width,c.height);
+    c.toBlob(blob=>{if(!blob)return;const a=document.createElement('a');const u=URL.createObjectURL(blob);a.href=u;a.download='VELORA-effect-'+Date.now()+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(u),1500);},'image/png');
+  };
+  window.addEventListener('resize',()=>{if(fxCanvas)fxPosition();});
+
   async function showInViewer(id) {
     await saveCaption();
     const m = byId.get(id), f = await getFile(id); if (!m || !f) return;
@@ -914,6 +1003,10 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     else { el.alt = ''; el.style.transition = 'transform .12s ease'; }
     el.src = curUrl;
     vstage.appendChild(el);
+    if (m.kind !== 'video') {
+      el.onload = () => fxSetup(true);
+      if (el.complete) fxSetup(true);
+    } else fxSetup(false);
     const i = order.indexOf(id);
     $('#prevV').hidden = i <= 0; $('#nextV').hidden = i < 0 || i >= order.length - 1;
   }
@@ -931,6 +1024,8 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   $('#prevV').onclick = () => stepViewer(-1);
   $('#nextV').onclick = () => stepViewer(1);
   function clearViewerMedia() {
+    if (fxCanvas) { fxCanvas.remove(); fxCanvas = fxCtx = null; }
+    $('#imageFxBar').hidden = true; $('#fxHint').hidden = true;
     vstage.querySelectorAll('img,video').forEach(n => {
       if (n.tagName === 'VIDEO') { n.pause(); n.removeAttribute('src'); n.load(); }
       n.remove();
