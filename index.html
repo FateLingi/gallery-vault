@@ -199,11 +199,6 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
 #vstage.zoomed img{cursor:grab}
 #vstage.panning img{cursor:grabbing}
 #vstage{touch-action:none; overflow:hidden}
-#zoomBar{position:absolute; left:50%; bottom:10px; transform:translateX(-50%); z-index:3; display:flex; align-items:center; gap:2px; padding:3px; border-radius:22px; background:rgba(20,18,26,.78)}
-#zoomBar button{min-height:34px; min-width:34px; padding:0 10px; background:transparent; border-radius:18px; font-size:1.05rem}
-#zoomBar button:hover{background:rgba(255,255,255,.1)}
-#zoomBar #zoomReset{font-size:.82rem}
-#zoomLevel{min-width:46px; text-align:center; color:var(--muted); font-size:.82rem}
 .tag-strip{display:flex; align-items:flex-start; gap:6px; margin-top:8px}
 .tag-strip #vTags{flex:1; padding:0; min-height:32px; align-content:center}
 .tag-plus{min-height:32px; min-width:32px; padding:0 10px; border-radius:16px; background:var(--panel); color:var(--accent); border:1px solid color-mix(in srgb,var(--accent) 30%,var(--panel2))}
@@ -281,12 +276,6 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   <div id="vstage">
     <button id="prevV" class="vnav" type="button" aria-label="ก่อนหน้า">‹</button>
     <button id="nextV" class="vnav" type="button" aria-label="ถัดไป">›</button>
-    <div id="zoomBar" hidden>
-      <button id="zoomOut" type="button" aria-label="ซูมออก">−</button>
-      <span id="zoomLevel">100%</span>
-      <button id="zoomIn" type="button" aria-label="ซูมเข้า">＋</button>
-      <button id="zoomReset" type="button" aria-label="รีเซ็ตการซูม">รีเซ็ต</button>
-    </div>
   </div>
   <div id="vbar">
     <textarea id="vcap" rows="6" maxlength="2000" placeholder="เขียนข้อความ..."></textarea>
@@ -937,7 +926,6 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     if (zoom <= 1.001) { zoom = 1; panX = panY = 0; } else clampPan();
     img.style.transition = animate ? 'transform .18s ease' : 'none';
     img.style.transform = zoom === 1 ? '' : `translate(${panX}px,${panY}px) scale(${zoom})`;
-    $('#zoomLevel').textContent = Math.round(zoom * 100) + '%';
     vstage.classList.toggle('zoomed', zoom > 1);
   }
   // centre of the picture at zoom 1 / no pan (stable reference point for the maths)
@@ -957,9 +945,6 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     const c = baseCenter(); zoomAt(zoom * f, c.x, c.y, true);
   }
   function resetZoom(animate) { zoom = 1; panX = panY = 0; pts.clear(); g = null; vstage.classList.remove('panning'); applyZoom(animate); }
-  $('#zoomIn').onclick = () => zoomCenter(1.4);
-  $('#zoomOut').onclick = () => zoomCenter(1 / 1.4);
-  $('#zoomReset').onclick = () => resetZoom(true);
 
   vstage.addEventListener('wheel', e => {
     if (!vImg()) return;
@@ -1041,7 +1026,6 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     el.src = curUrl;
     vstage.appendChild(el);
     resetZoom(false);
-    $('#zoomBar').hidden = m.kind === 'video';
     const i = order.indexOf(id);
     $('#prevV').hidden = i <= 0; $('#nextV').hidden = i < 0 || i >= order.length - 1;
   }
@@ -1059,7 +1043,6 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   $('#prevV').onclick = () => stepViewer(-1);
   $('#nextV').onclick = () => stepViewer(1);
   function clearViewerMedia() {
-    $('#zoomBar').hidden = true;
     vstage.querySelectorAll('img,video').forEach(n => {
       if (n.tagName === 'VIDEO') { n.pause(); n.removeAttribute('src'); n.load(); }
       n.remove();
