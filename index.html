@@ -6,6 +6,12 @@
 <title>VELORA</title>
 <meta name="theme-color" content="#090608">
 <meta name="description" content="VELORA — your private visual gallery">
+<meta name="application-name" content="VELORA">
+<meta name="apple-mobile-web-app-title" content="VELORA">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="icon" type="image/png" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
 <link rel="manifest" href="./manifest.webmanifest">
 <style>
 :root{
@@ -159,14 +165,15 @@ main{padding:12px 16px 80px}
 #nextV{right:6px; border-radius:10px 0 0 10px}
 #drop{
   position:fixed; inset:0; z-index:30; display:flex; align-items:center; justify-content:center;
-  background:rgba(157,176,255,.18); border:3px dashed var(--accent); font-size:1.4rem; pointer-events:none;
+  background:var(--glow); border:3px dashed var(--accent); font-size:1.4rem; pointer-events:none;
 }
 
 dialog{
   background:var(--panel); color:var(--text); border:1px solid var(--panel2); border-radius:14px;
   padding:18px; width:min(92vw,360px);
 }
-dialog::backdrop{background:rgba(0,0,0,.6)}\n.storage-card{background:var(--bg);border:1px solid var(--panel2);border-radius:9px;padding:10px 12px;margin:8px 0}.storage-card p{margin:4px 0 0;color:var(--muted);overflow-wrap:anywhere}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+.storage-card{background:var(--bg);border:1px solid var(--panel2);border-radius:9px;padding:10px 12px;margin:8px 0}.storage-card p{margin:4px 0 0;color:var(--muted);overflow-wrap:anywhere}
 dialog label{display:block; margin-bottom:10px; font-weight:600}
 dialog input,dialog select{
   width:100%; background:var(--bg); color:var(--text); border:1px solid var(--panel2); border-radius:8px;
@@ -188,16 +195,25 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   #fgrid{grid-template-columns:repeat(2,1fr); gap:16px 12px}
 }
  
-  #fxCanvas{position:absolute;z-index:5;pointer-events:auto;touch-action:none;cursor:crosshair}
-  #imageFxBar button[data-active="true"]{border-color:var(--accent);background:var(--panel2);color:var(--text)}
-  #imageFxBar[hidden],#fxHint[hidden]{display:none}
+#vstage img{cursor:zoom-in; -webkit-user-select:none; user-select:none; -webkit-user-drag:none; will-change:transform}
+#vstage.zoomed img{cursor:grab}
+#vstage.panning img{cursor:grabbing}
+#vstage{touch-action:none; overflow:hidden}
+#zoomBar{position:absolute; left:50%; bottom:10px; transform:translateX(-50%); z-index:3; display:flex; align-items:center; gap:2px; padding:3px; border-radius:22px; background:rgba(20,18,26,.78)}
+#zoomBar button{min-height:34px; min-width:34px; padding:0 10px; background:transparent; border-radius:18px; font-size:1.05rem}
+#zoomBar button:hover{background:rgba(255,255,255,.1)}
+#zoomBar #zoomReset{font-size:.82rem}
+#zoomLevel{min-width:46px; text-align:center; color:var(--muted); font-size:.82rem}
+.tag-strip{display:flex; align-items:flex-start; gap:6px; margin-top:8px}
+.tag-strip #vTags{flex:1; padding:0; min-height:32px; align-content:center}
+.tag-plus{min-height:32px; min-width:32px; padding:0 10px; border-radius:16px; background:var(--panel); color:var(--accent); border:1px solid color-mix(in srgb,var(--accent) 30%,var(--panel2))}
 </style>
 </head>
 <body>
 
 <!-- header: home -->
 <header id="hHome">
-  <h1>VELORA <small id="count"></small></h1>
+  <h1>VELORA</h1>
   <div class="actions">
     <button id="newFolder" class="primary" type="button">+ สร้างแฟ้ม</button>
     <button id="addHome" type="button">เพิ่มไฟล์</button>
@@ -207,7 +223,8 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
         <button id="exportCode" type="button">ส่งออกเป็นโค้ด</button>
         <button id="importCode" type="button">นำเข้าจากโค้ด</button>
         <button id="export" type="button">ส่งออกไฟล์สำรอง (.galv)</button>
-        <button id="import" type="button">นำเข้าไฟล์สำรอง (.galv)</button>\n        <button id="storageOpen" type="button">Storage Manager · พื้นที่จัดเก็บ</button>
+        <button id="import" type="button">นำเข้าไฟล์สำรอง (.galv)</button>
+        <button id="storageOpen" type="button">Storage Manager · พื้นที่จัดเก็บ</button>
         <label class="theme-label" for="themeSelect">ธีมสีแอป</label>
         <select id="themeSelect" class="theme-select">
           <option value="mystery">MYSTERY · ดำ/แดงไวน์/แชมเปญ</option>
@@ -264,6 +281,12 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   <div id="vstage">
     <button id="prevV" class="vnav" type="button" aria-label="ก่อนหน้า">‹</button>
     <button id="nextV" class="vnav" type="button" aria-label="ถัดไป">›</button>
+    <div id="zoomBar" hidden>
+      <button id="zoomOut" type="button" aria-label="ซูมออก">−</button>
+      <span id="zoomLevel">100%</span>
+      <button id="zoomIn" type="button" aria-label="ซูมเข้า">＋</button>
+      <button id="zoomReset" type="button" aria-label="รีเซ็ตการซูม">รีเซ็ต</button>
+    </div>
   </div>
   <div id="vbar">
     <textarea id="vcap" rows="6" maxlength="2000" placeholder="เขียนข้อความ..."></textarea>
@@ -271,16 +294,6 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
       <div id="vTags" aria-label="แท็คของไฟล์นี้"></div>
       <button id="tagToggle" class="tag-plus" type="button" aria-label="เพิ่มแท็ค" title="เพิ่มแท็ค">＋</button>
     </div>
-    <div id="imageFxBar" class="tag-strip" hidden style="margin-top:8px;gap:6px;flex-wrap:wrap">
-      <button type="button" class="tag-plus" data-fx="wet">💧 Wet</button>
-      <button type="button" class="tag-plus" data-fx="dry">☀ Dry</button>
-      <button type="button" class="tag-plus" data-fx="flow">↘ Flow</button>
-      <button type="button" class="tag-plus" data-fx="splash">✧ Splash</button>
-      <button type="button" class="tag-plus" data-fx="off">ปิดเครื่องมือ</button>
-      <button type="button" class="tag-plus" id="fxClear">ล้างเอฟเฟกต์</button>
-      <button type="button" class="tag-plus" id="fxExport">บันทึกภาพใหม่</button>
-    </div>
-    <div id="fxHint" style="font-size:.78rem;color:var(--muted);margin-top:5px" hidden>เลือกเครื่องมือ แล้วลากหรือแตะบนภาพ · Flow ใช้การลากกำหนดทิศทาง · สีของน้ำเป็นสีขาว</div>
     <div class="tag-editor" id="tagEditor" hidden>
       <input id="vtagIn" type="text" maxlength="40" placeholder="เพิ่มแท็ค เช่น #เที่ยว">
       <button id="vtagAdd" type="button">เพิ่ม</button>
@@ -602,7 +615,6 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     list.forEach(f => frag.appendChild(makeCard(f, false)));
     fgrid.appendChild(frag);
     $('#homeEmpty').hidden = folders.size > 0 || itemsOf(UNFILED).length > 0;
-    $('#count').textContent = folders.size ? folders.size + ' แฟ้ม' : '';
   }
   fgrid.addEventListener('click', e => {
     const el = e.target.closest('.fcard'); if (!el) return;
@@ -817,7 +829,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   function normalizeTags(tags) {
     const out = [];
     for (const raw of (Array.isArray(tags) ? tags : [])) {
-      const tag = String(raw).trim().replace(/^#+/, '').replace(/\\s+/g, '-').slice(0, 32);
+      const tag = String(raw).trim().replace(/^#+/, '').replace(/\s+/g, '-').slice(0, 32);
       if (tag && !out.includes(tag)) out.push(tag);
       if (out.length >= 20) break;
     }
@@ -906,107 +918,130 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     v.addEventListener('play', start);
     v.addEventListener('ended', () => { try { v.currentTime = 0; v.play(); } catch (e) {} });
   }
-  let curUrl = null, pushed = false, zoom = 1, pinchStart = 0, pinchZoom = 1;
-  function setZoom(value) {
-    zoom = Math.max(1, Math.min(5, value));
-    const img = vstage.querySelector('img');
-    if (img) img.style.transform = `scale(${zoom})`;
+  let curUrl = null, pushed = false, vTok = 0;
+
+  /* ---------- zoom & pan (wheel / pinch / drag / double-tap, mouse + touch) ---------- */
+  const ZMIN = 1, ZMAX = 8;
+  let zoom = 1, panX = 0, panY = 0, g = null, suppressClick = false;
+  const pts = new Map();
+  const lastTap = { t: 0, x: 0, y: 0 };
+  const vImg = () => vstage.querySelector('img');
+  function clampPan() {
+    const img = vImg(); if (!img) { panX = panY = 0; return; }
+    const mx = Math.max(0, (img.offsetWidth * zoom - vstage.clientWidth) / 2);
+    const my = Math.max(0, (img.offsetHeight * zoom - vstage.clientHeight) / 2);
+    panX = Math.max(-mx, Math.min(mx, panX)); panY = Math.max(-my, Math.min(my, panY));
   }
+  function applyZoom(animate) {
+    const img = vImg(); if (!img) return;
+    if (zoom <= 1.001) { zoom = 1; panX = panY = 0; } else clampPan();
+    img.style.transition = animate ? 'transform .18s ease' : 'none';
+    img.style.transform = zoom === 1 ? '' : `translate(${panX}px,${panY}px) scale(${zoom})`;
+    $('#zoomLevel').textContent = Math.round(zoom * 100) + '%';
+    vstage.classList.toggle('zoomed', zoom > 1);
+  }
+  // centre of the picture at zoom 1 / no pan (stable reference point for the maths)
+  function baseCenter() {
+    const r = vImg().getBoundingClientRect();
+    return { x: r.left + r.width / 2 - panX, y: r.top + r.height / 2 - panY };
+  }
+  function zoomAt(z, cx, cy, animate) {
+    if (!vImg()) return;
+    const c = baseCenter(), s0 = zoom, s1 = Math.max(ZMIN, Math.min(ZMAX, z));
+    const rx = cx - c.x, ry = cy - c.y;
+    panX = rx - (rx - panX) * (s1 / s0); panY = ry - (ry - panY) * (s1 / s0);
+    zoom = s1; applyZoom(animate);
+  }
+  function zoomCenter(f) {
+    const img = vImg(); if (!img) return;
+    const c = baseCenter(); zoomAt(zoom * f, c.x, c.y, true);
+  }
+  function resetZoom(animate) { zoom = 1; panX = panY = 0; pts.clear(); g = null; vstage.classList.remove('panning'); applyZoom(animate); }
+  $('#zoomIn').onclick = () => zoomCenter(1.4);
+  $('#zoomOut').onclick = () => zoomCenter(1 / 1.4);
+  $('#zoomReset').onclick = () => resetZoom(true);
 
+  vstage.addEventListener('wheel', e => {
+    if (!vImg()) return;
+    e.preventDefault();
+    zoomAt(zoom * Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), e.clientX, e.clientY, false);
+  }, { passive: false });
 
-
-  // Image-only visual effects. Original media is never modified.
-  let fxCanvas = null, fxCtx = null, fxTool = 'off', fxDrawing = false, fxLast = null;
-  function fxSetup(img) {
-    const bar = $('#imageFxBar'), hint = $('#fxHint');
-    bar.hidden = !img; hint.hidden = !img;
-    if (!img) { if (fxCanvas) fxCanvas.remove(); fxCanvas = fxCtx = null; fxTool = 'off'; return; }
-    if (!fxCanvas) {
-      fxCanvas = document.createElement('canvas'); fxCanvas.id = 'fxCanvas';
-      vstage.appendChild(fxCanvas); fxCtx = fxCanvas.getContext('2d');
-      fxCanvas.addEventListener('pointerdown', fxStart);
-      fxCanvas.addEventListener('pointermove', fxMove);
-      fxCanvas.addEventListener('pointerup', fxEnd);
-      fxCanvas.addEventListener('pointercancel', fxEnd);
+  const ptDist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  function startPinch() {
+    const [a, b] = [...pts.values()], c = baseCenter();
+    g.mode = 'pinch'; g.pinched = true; g.d0 = Math.max(1, ptDist(a, b)); g.z0 = zoom;
+    g.c = c; g.m0 = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; g.px = panX; g.py = panY;
+  }
+  vstage.addEventListener('pointerdown', e => {
+    const img = vImg(); if (!img || (e.target !== img && e.target !== vstage)) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 1) g = { mode: 'pan', x0: e.clientX, y0: e.clientY, px: panX, py: panY, t0: Date.now(), moved: false, pinched: false, onImg: e.target === img };
+    else if (pts.size === 2 && g) startPinch();
+    if (zoom > 1) vstage.classList.add('panning');
+  });
+  vstage.addEventListener('pointermove', e => {
+    if (!pts.has(e.pointerId) || !g) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (g.mode === 'pinch' && pts.size >= 2) {
+      const [a, b] = [...pts.values()];
+      const z1 = Math.max(ZMIN, Math.min(ZMAX, g.z0 * ptDist(a, b) / g.d0)), m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      panX = (m.x - g.c.x) - ((g.m0.x - g.c.x) - g.px) * (z1 / g.z0);
+      panY = (m.y - g.c.y) - ((g.m0.y - g.c.y) - g.py) * (z1 / g.z0);
+      zoom = z1; g.moved = true; applyZoom(false);
+    } else if (g.mode === 'pan') {
+      const dx = e.clientX - g.x0, dy = e.clientY - g.y0;
+      if (Math.hypot(dx, dy) > 6) g.moved = true;
+      if (zoom > 1) { panX = g.px + dx; panY = g.py + dy; applyZoom(false); }
     }
-    requestAnimationFrame(fxPosition);
-  }
-  function fxPosition() {
-    const img = vstage.querySelector('img'); if (!img || !fxCanvas) return;
-    const r = img.getBoundingClientRect(), s = vstage.getBoundingClientRect();
-    fxCanvas.style.left = (r.left-s.left)+'px'; fxCanvas.style.top = (r.top-s.top)+'px';
-    fxCanvas.style.width = r.width+'px'; fxCanvas.style.height = r.height+'px';
-    const w=Math.max(1,Math.round(r.width*devicePixelRatio)), h=Math.max(1,Math.round(r.height*devicePixelRatio));
-    if (fxCanvas.width!==w || fxCanvas.height!==h) {
-      const old=document.createElement('canvas'); old.width=fxCanvas.width; old.height=fxCanvas.height;
-      old.getContext('2d').drawImage(fxCanvas,0,0);
-      fxCanvas.width=w; fxCanvas.height=h;
-      if(old.width&&old.height) fxCtx.drawImage(old,0,0,w,h);
+  });
+  function endPointer(e) {
+    if (!pts.has(e.pointerId)) return;
+    pts.delete(e.pointerId);
+    if (!g) return;
+    vstage.classList.remove('panning');
+    if (g.moved || g.pinched) { suppressClick = true; setTimeout(() => { suppressClick = false; }, 60); }
+    if (pts.size === 1 && g.mode === 'pinch') {          // one finger lifted: keep panning with the other
+      const p = [...pts.values()][0];
+      g = { ...g, mode: 'pan', x0: p.x, y0: p.y, px: panX, py: panY, moved: true };
+      return;
     }
-    fxCtx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+    if (pts.size > 0) return;
+    const gg = g; g = null;
+    if (e.type === 'pointercancel') return;
+    const dx = e.clientX - gg.x0, dy = e.clientY - gg.y0, now = Date.now();
+    if (!gg.moved && !gg.pinched && now - gg.t0 < 350) {                       // tap
+      if (!gg.onImg) return;
+      if (now - lastTap.t < 330 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 32) {   // double tap / double click
+        if (zoom > 1) resetZoom(true); else zoomAt(2.5, e.clientX, e.clientY, true);
+        lastTap.t = 0;
+      } else { lastTap.t = now; lastTap.x = e.clientX; lastTap.y = e.clientY; }
+      return;
+    }
+    if (zoom === 1 && !gg.pinched && e.pointerType !== 'mouse' && Math.abs(dx) > 60 && Math.abs(dy) < 50) stepViewer(dx < 0 ? 1 : -1);   // swipe
   }
-  function fxPoint(e) { const r=fxCanvas.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; }
-  function fxStart(e) {
-    if(fxTool==='off') return;
-    e.preventDefault(); fxCanvas.setPointerCapture(e.pointerId); fxDrawing=true; fxLast=fxPoint(e);
-    if(fxTool==='splash') { fxSplash(fxLast); fxDrawing=false; return; }
-    if(fxTool==='wet') fxWet(fxLast);
-  }
-  function fxMove(e) {
-    if(!fxDrawing || !fxLast) return;
-    const p=fxPoint(e);
-    if(fxTool==='wet') fxWet(p);
-    if(fxTool==='dry') { fxCtx.save(); fxCtx.globalCompositeOperation='destination-out'; fxCtx.beginPath(); fxCtx.lineWidth=34; fxCtx.lineCap='round'; fxCtx.moveTo(fxLast.x,fxLast.y); fxCtx.lineTo(p.x,p.y); fxCtx.stroke(); fxCtx.restore(); }
-    if(fxTool==='flow') { fxCtx.clearRect(0,0,fxCanvas.width,fxCanvas.height); fxCtx.beginPath(); fxCtx.moveTo(fxLast.x,fxLast.y); fxCtx.lineTo(p.x,p.y); fxCtx.strokeStyle='rgba(255,255,255,.9)'; fxCtx.lineWidth=5; fxCtx.lineCap='round'; fxCtx.shadowColor='#fff'; fxCtx.shadowBlur=8; fxCtx.stroke(); fxCtx.shadowBlur=0; fxCtx.beginPath(); fxCtx.arc(p.x,p.y,4,0,Math.PI*2); fxCtx.fillStyle='#fff'; fxCtx.fill(); }
-    fxLast=p;
-  }
-  function fxEnd(){fxDrawing=false;fxLast=null;}
-  function fxWet(p) {
-    const r=5+Math.random()*9;
-    const g=fxCtx.createRadialGradient(p.x-r*.35,p.y-r*.4,1,p.x,p.y,r);
-    g.addColorStop(0,'rgba(255,255,255,.78)'); g.addColorStop(.35,'rgba(210,235,245,.34)'); g.addColorStop(1,'rgba(255,255,255,.04)');
-    fxCtx.fillStyle=g; fxCtx.beginPath(); fxCtx.ellipse(p.x,p.y,r*.72,r,Math.random(),0,Math.PI*2); fxCtx.fill();
-    fxCtx.fillStyle='rgba(255,255,255,.8)'; fxCtx.beginPath(); fxCtx.arc(p.x-r*.22,p.y-r*.3,Math.max(1,r*.13),0,Math.PI*2); fxCtx.fill();
-  }
-  function fxSplash(p) {
-    for(let i=0;i<28;i++){const a=Math.random()*Math.PI*2, d=5+Math.random()*35, r=1+Math.random()*3;
-      const x=p.x+Math.cos(a)*d,y=p.y+Math.sin(a)*d;
-      fxCtx.beginPath();fxCtx.arc(x,y,r,0,Math.PI*2);fxCtx.fillStyle='rgba(255,255,255,'+(0.45+Math.random()*.5)+')';fxCtx.shadowColor='#fff';fxCtx.shadowBlur=5;fxCtx.fill();
-    } fxCtx.shadowBlur=0;
-    fxCtx.beginPath();fxCtx.arc(p.x,p.y,4,0,Math.PI*2);fxCtx.fillStyle='#fff';fxCtx.fill();
-  }
-  document.querySelectorAll('[data-fx]').forEach(b=>b.addEventListener('click',()=>{
-    fxTool=b.dataset.fx; document.querySelectorAll('[data-fx]').forEach(x=>x.dataset.active=String(x===b));
-    $('#fxHint').textContent=({wet:'ลากนิ้วหรือเมาส์เพื่อแต้มหยดน้ำและความเปียก',dry:'ลากเพื่อลบเอฟเฟกต์น้ำในบริเวณนั้น',flow:'ลากจากจุดเริ่มต้นไปยังทิศทางที่ต้องการให้น้ำสีขาวไหล',splash:'แตะจุดที่ต้องการสร้างละอองน้ำสีขาว',off:'ปิดเครื่องมือเอฟเฟกต์'}[fxTool]||'');
-    if(fxCanvas) fxCanvas.style.pointerEvents=fxTool==='off'?'none':'auto';
-  }));
-  $('#fxClear').onclick=()=>{if(fxCtx&&fxCanvas)fxCtx.clearRect(0,0,fxCanvas.width,fxCanvas.height);};
-  $('#fxExport').onclick=()=>{
-    const img=vstage.querySelector('img'); if(!img||!fxCanvas)return;
-    const c=document.createElement('canvas'); c.width=img.naturalWidth; c.height=img.naturalHeight;
-    const x=c.getContext('2d'); x.drawImage(img,0,0,c.width,c.height); x.drawImage(fxCanvas,0,0,c.width,c.height);
-    c.toBlob(blob=>{if(!blob)return;const a=document.createElement('a');const u=URL.createObjectURL(blob);a.href=u;a.download='VELORA-effect-'+Date.now()+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(u),1500);},'image/png');
-  };
-  window.addEventListener('resize',()=>{if(fxCanvas)fxPosition();});
+  vstage.addEventListener('pointerup', endPointer);
+  vstage.addEventListener('pointercancel', endPointer);
+  vstage.addEventListener('lostpointercapture', e => { if (pts.has(e.pointerId)) endPointer(e); });
 
   async function showInViewer(id) {
+    const tok = ++vTok;
     await saveCaption();
-    const m = byId.get(id), f = await getFile(id); if (!m || !f) return;
+    const m = byId.get(id), f = await getFile(id); if (!m || !f || tok !== vTok) return;
     clearViewerMedia();
     vId = id; vDirty = false; vsave.hidden = true; vstate.textContent = '';
     vcap.value = m.caption || '';
     $('#vtagIn').value = ''; $('#tagEditor').hidden = true; renderTags(m);
-    zoom = 1;
     curUrl = URL.createObjectURL(f);
     const el = document.createElement(m.kind === 'video' ? 'video' : 'img');
     if (m.kind === 'video') { el.defaultMuted = true; el.muted = true; el.controls = true; el.autoplay = true; el.playsInline = true; el.loop = true; gaplessLoop(el); }
-    else { el.alt = ''; el.style.transition = 'transform .12s ease'; }
+    else { el.alt = ''; el.draggable = false; }
     el.src = curUrl;
     vstage.appendChild(el);
-    if (m.kind !== 'video') {
-      el.onload = () => fxSetup(true);
-      if (el.complete) fxSetup(true);
-    } else fxSetup(false);
+    resetZoom(false);
+    $('#zoomBar').hidden = m.kind === 'video';
     const i = order.indexOf(id);
     $('#prevV').hidden = i <= 0; $('#nextV').hidden = i < 0 || i >= order.length - 1;
   }
@@ -1024,8 +1059,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   $('#prevV').onclick = () => stepViewer(-1);
   $('#nextV').onclick = () => stepViewer(1);
   function clearViewerMedia() {
-    if (fxCanvas) { fxCanvas.remove(); fxCanvas = fxCtx = null; }
-    $('#imageFxBar').hidden = true; $('#fxHint').hidden = true;
+    $('#zoomBar').hidden = true;
     vstage.querySelectorAll('img,video').forEach(n => {
       if (n.tagName === 'VIDEO') { n.pause(); n.removeAttribute('src'); n.load(); }
       n.remove();
@@ -1035,46 +1069,26 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   function closeViewer(fromPop) {
     if (viewer.hidden) return;
     saveCaption();
-    clearViewerMedia(); viewer.hidden = true; vId = null;
+    vTok++; clearViewerMedia(); resetZoom(false); viewer.hidden = true; vId = null;
     if (pushed && !fromPop) { pushed = false; history.back(); } else pushed = false;
   }
-  vstage.addEventListener('wheel', e => {
-    if (!vstage.querySelector('img')) return;
-    e.preventDefault(); setZoom(zoom + (e.deltaY < 0 ? 0.15 : -0.15));
-  }, { passive: false });
-  vstage.addEventListener('click', e => { if (e.target === vstage) closeViewer(); });
+  vstage.addEventListener('click', e => {
+    if (suppressClick) { suppressClick = false; return; }
+    if (e.target === vstage) closeViewer();
+  });
   document.addEventListener('keydown', e => {
     if (viewer.hidden) return;
     if (e.key === 'Escape') { if (!$('#nameDlg').open && !$('#pickDlg').open) closeViewer(); return; }
     if (e.target.matches && e.target.matches('textarea,input,select')) return;
-    if (e.key === 'ArrowLeft') stepViewer(-1);
-    else if (e.key === 'ArrowRight') stepViewer(1);
+    if (e.key === '+' || e.key === '=') zoomCenter(1.4);
+    else if (e.key === '-' || e.key === '_') zoomCenter(1 / 1.4);
+    else if (e.key === '0') resetZoom(true);
+    else if (e.key === 'ArrowLeft') { if (zoom > 1) { panX += 60; applyZoom(false); } else stepViewer(-1); }
+    else if (e.key === 'ArrowRight') { if (zoom > 1) { panX -= 60; applyZoom(false); } else stepViewer(1); }
+    else if (zoom > 1 && e.key === 'ArrowUp') { panY += 60; applyZoom(false); }
+    else if (zoom > 1 && e.key === 'ArrowDown') { panY -= 60; applyZoom(false); }
   });
-  let tx0 = 0, ty0 = 0, pinching = false, lastTapAt = 0, lastTapX = 0, lastTapY = 0;
-  vstage.addEventListener('dblclick', e => {
-    if (e.target.tagName === 'IMG') { e.preventDefault(); setZoom(1); }
-  });
-  const touchDistance = ts => Math.hypot(ts[0].clientX - ts[1].clientX, ts[0].clientY - ts[1].clientY);
-  vstage.addEventListener('touchstart', e => {
-    if (e.touches.length === 2 && vstage.querySelector('img')) { pinching = true; pinchStart = touchDistance(e.touches); pinchZoom = zoom; }
-    else if (e.touches.length === 1) { const t = e.changedTouches[0]; tx0 = t.clientX; ty0 = t.clientY; }
-  }, { passive: true });
-  vstage.addEventListener('touchmove', e => {
-    if (pinching && e.touches.length === 2) { e.preventDefault(); setZoom(pinchZoom * touchDistance(e.touches) / Math.max(1, pinchStart)); }
-  }, { passive: false });
-  vstage.addEventListener('touchend', e => {
-    if (e.touches.length < 2 && pinching) { pinching = false; return; }
-    if (pinching || e.target.tagName === 'VIDEO') return;
-    const t = e.changedTouches[0], dx = t.clientX - tx0, dy = t.clientY - ty0;
-    const now = Date.now();
-    if (e.target.tagName === 'IMG' && Math.abs(dx) < 18 && Math.abs(dy) < 18) {
-      if (now - lastTapAt < 330 && Math.hypot(t.clientX - lastTapX, t.clientY - lastTapY) < 32) {
-        setZoom(1); lastTapAt = 0; return;
-      }
-      lastTapAt = now; lastTapX = t.clientX; lastTapY = t.clientY;
-    }
-    if (Math.abs(dx) > 60 && Math.abs(dy) < 50) stepViewer(dx < 0 ? 1 : -1);
-  }, { passive: true });
+  window.addEventListener('resize', () => { if (!viewer.hidden) applyZoom(false); });
 
   /* ---------- backup ---------- */
   async function buildBackup() {
@@ -1104,7 +1118,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   }
   async function exportAll() {
     const blob = await buildBackup(); if (!blob) return;
-    downloadBlob(blob, 'gallery-backup.galv');
+    downloadBlob(blob, 'velora-backup.galv');
     setStatus('ส่งออกแล้ว');
   }
 
@@ -1216,7 +1230,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   $('#codeOutNo').onclick = () => { $('#codeOutDlg').close(); codeChunks = null; };
   $('#codeSave').onclick = () => {
     if (!codeChunks) return;
-    downloadBlob(new Blob(codeChunks, { type: 'text/plain' }), 'gallery-backup-code.txt');
+    downloadBlob(new Blob(codeChunks, { type: 'text/plain' }), 'velora-backup-code.txt');
     setStatus('บันทึกไฟล์โค้ดแล้ว');
   };
   $('#codeCopy').onclick = async () => {
