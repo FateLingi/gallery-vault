@@ -1,4 +1,4 @@
-const CACHE = "velora-pwa-v6";
+const CACHE = "velora-pwa-v9";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", event => {
