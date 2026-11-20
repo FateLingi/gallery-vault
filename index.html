@@ -334,6 +334,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   <label>สติกเกอร์</label>
   <p style="color:var(--muted);margin:0 0 12px">อัปโหลด ครอบตัด และตั้งชื่อได้ (ชื่อใช้ตอนเลือกเท่านั้น ไม่โชว์ตอนแปะ) แล้วเลือกสติกเกอร์ให้แต่ละรูป/วิดีโอจากปุ่ม "สติกเกอร์" ในหน้าดูไฟล์</p>
   <div id="stList" class="stgrid"></div>
+  <p id="stProg" hidden style="color:var(--accent);margin:0 0 10px"></p>
   <p id="stEmpty" style="color:var(--muted)">ยังไม่มีสติกเกอร์</p>
   <div class="dbtn"><button type="button" id="stAdd">+ อัปโหลด</button><button type="button" id="stClose" class="primary">ปิด</button></div>
 </dialog>
@@ -537,7 +538,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   async function convertStickers() {
     const todo = stickers.filter(st => isVid(st) && !st.frames && !posterFail.has(st.id)); let n = 0;
     for (const st of todo) {
-      setStatus(`กำลังแปลงสติกเกอร์ ${++n}/${todo.length}`);
+      const msg = `กำลังแปลงสติกเกอร์ ${++n}/${todo.length} (รอสักครู่ ห้ามปิดหน้านี้)`; setStatus(msg, 0); const pe = $('#stProg'); if (pe) { pe.textContent = msg; pe.hidden = false; }
       const url = URL.createObjectURL(st.blob), v = document.createElement('video');
       v.muted = true; v.defaultMuted = true; v.playsInline = true; v.preload = 'auto'; v.setAttribute('playsinline', ''); v.setAttribute('muted', '');
       /* มือถือไม่โหลดวิดีโอที่ไม่ได้อยู่ในหน้า/ไม่ได้ play จึงใส่ไว้ในหน้าแบบซ่อน แล้วสั่ง play ให้เริ่มถอดรหัส */
@@ -573,7 +574,8 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
       v.removeAttribute('src'); v.load(); v.remove(); URL.revokeObjectURL(url);
       if (n % 3 === 0) refreshStickerViews();
     }
-    if (n) { setStatus('แปลงสติกเกอร์เสร็จแล้ว'); refreshStickerViews(); }
+    const pe = $('#stProg'); if (pe) pe.hidden = true;
+    if (n) { const bad = posterFail.size; setStatus(bad ? `แปลงเสร็จ แต่ล้มเหลว ${bad} อัน (เครื่องถอดรหัสไม่ได้)` : 'แปลงสติกเกอร์เสร็จแล้ว', 6000); refreshStickerViews(); }
   }
   const nameOf = s => s.name || 'ไม่มีชื่อ';
 
