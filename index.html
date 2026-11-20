@@ -141,7 +141,7 @@ main{padding:12px 16px 80px}
 .stbadge{position:absolute; top:4px; right:4px; min-width:22px; height:22px; border-radius:11px; background:var(--accent); color:var(--on-accent); font-size:.8rem; font-weight:700; display:flex; align-items:center; justify-content:center}
 #capwrap.hasst #vcap{padding-right:calc(var(--stw,100px) + 24px)}
 .scrop{position:relative; overflow:hidden; flex:none}
-.scrop img,.scrop video{display:block; position:absolute; max-width:none; max-height:none; object-fit:fill; background:transparent; -webkit-user-drag:none}
+.scrop img,.scrop video,.scrop canvas{display:block; position:absolute; max-width:none; max-height:none; object-fit:fill; background:transparent; -webkit-user-drag:none}
 #vstk{background:transparent; color:var(--muted)}
 #vstk:hover{color:var(--text)}
 #cropStage{display:flex; justify-content:center; margin:10px 0}
@@ -453,19 +453,32 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   const isVid = s => (s.type || '').startsWith('video/');
   async function loadStickers() { try { stickers = await req(store('stickers').getAll()); } catch (e) { stickers = []; } }
   /* ครอบตัดแบบไม่แตะไฟล์ต้นฉบับ: เก็บสัดส่วนกรอบไว้ แล้วเลื่อน/ขยายสื่อในกรอบตอนแสดง */
-  function mkSticker(s, url, bw, bh) {
+  function mkSticker(s, url, bw, bh, still) {
     const c = s.crop || FULL;
     const ar = (c.w * (s.w || 1)) / (c.h * (s.h || 1));
     let h = bh, w = h * ar; if (w > bw) { w = bw; h = w / ar; }
     const wrap = document.createElement('div'); wrap.className = 'scrop';
-    wrap.style.width = w + 'px'; wrap.style.height = h + 'px'; wrap._w = w;
-    const v = isVid(s), el = document.createElement(v ? 'video' : 'img');
+    wrap.style.width = w + 'px'; wrap.style.height = h + 'px'; wrap._w = w; wrap._h = h; wrap._s = s;
+    const useF = !still && s.frames && s.frames.length, v = isVid(s) && !still && !useF, el = document.createElement(useF ? 'canvas' : v ? 'video' : 'img');
     if (v) { el.muted = true; el.defaultMuted = true; el.loop = true; el.autoplay = true; el.playsInline = true; el.controls = false; }
     else { el.alt = ''; el.draggable = false; }
     el.style.width = (100 / c.w) + '%'; el.style.height = (100 / c.h) + '%';
     el.style.left = (-c.x / c.w * 100) + '%'; el.style.top = (-c.y / c.h * 100) + '%';
-    el.src = url; if (v) el.play().catch(() => {});
+    if (useF) playFrames(el, s); else { el.src = url; if (v) el.play().catch(() => {}); }
     wrap.appendChild(el); return wrap;
+  }
+  async function playFrames(cv, s) {
+    const bm = [];
+    try { for (const f of s.frames) bm.push(await createImageBitmap(f)); } catch (e) { return; }
+    if (!bm.length) return;
+    cv.width = bm[0].width; cv.height = bm[0].height; const g = cv.getContext('2d');
+    let i = 0, last = 0; const step = 1000 / (s.fps || 12);
+    const tick = t => {
+      if (i > 0 && !cv.isConnected) { bm.forEach(b => b.close && b.close()); return; }
+      if (t - last >= step) { last = t; g.clearRect(0, 0, cv.width, cv.height); g.drawImage(bm[i % bm.length], 0, 0); i++; }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
   }
   function clearSticker() {
     const box = $('#vsticker'); box.querySelectorAll('video').forEach(n => { n.pause(); n.removeAttribute('src'); n.load(); });
@@ -486,9 +499,67 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     };
     let tot = build(1); if (tot > maxW) tot = build(maxW / tot);
     cap.style.setProperty('--stw', tot + 'px'); cap.classList.add('hasst');
+    setTimeout(() => {
+      box.querySelectorAll('.scrop').forEach(w => {
+        const v = w.querySelector('video');
+        if (v && v.readyState < 2 && w._s && w._s.poster) { const u = URL.createObjectURL(w._s.poster); stickUrls.push(u); w.replaceWith(mkSticker(w._s, u, w._w, w._h, true)); }
+      });
+    }, 1500);
   }
   function freeThumbs() { stThumbUrls.forEach(u => URL.revokeObjectURL(u)); stThumbUrls = []; }
-  function thumbOf(s) { const u = URL.createObjectURL(s.blob); stThumbUrls.push(u); const t = document.createElement('div'); t.className = 'stthumb'; t.appendChild(mkSticker(s, u, 100, 84)); return t; }
+  const BLANK = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+  function thumbOf(s) {
+    const t = document.createElement('div'); t.className = 'stthumb';
+    let u = BLANK, still = false;
+    if (isVid(s)) { still = true; if (s.poster) { u = URL.createObjectURL(s.poster); stThumbUrls.push(u); } else ensurePosters(); }
+    else { u = URL.createObjectURL(s.blob); stThumbUrls.push(u); }
+    t.appendChild(mkSticker(s, u, 100, 84, still)); return t;
+  }
+  /* สร้างภาพนิ่ง (poster) ของสติกเกอร์วิดีโอทีละตัว ใช้เป็นภาพตัวอย่างในรายการ ไม่ต้องเล่นวิดีโอพร้อมกันหลายตัว (มือถือถอดรหัสได้จำกัด) */
+  let posterRun = false; const posterFail = new Set();
+  function refreshStickerViews() {
+    const a = $('#stickerDlg'), b = $('#stPickDlg');
+    if (a.open) { const y = a.scrollTop; renderStickerList(); a.scrollTop = y; }
+    if (b.open) { const m = byId.get(vId); if (m) { const y = b.scrollTop; renderPick(m); b.scrollTop = y; } }
+  }
+  let posterP = null;
+  function ensurePosters() { if (!posterP) posterP = convertStickers().finally(() => { posterP = null; }); return posterP; }
+  /* แปลงสติกเกอร์วิดีโอเป็นชุดภาพ WebP (มีช่องโปร่งใส) เก็บไว้ในไฟล์สำรองด้วย
+     มือถือจะเล่นจากชุดภาพนี้ ไม่ต้องถอดรหัสวิดีโอโปร่งใสซึ่งหลายเครื่องทำไม่ได้ */
+  async function convertStickers() {
+    const todo = stickers.filter(st => isVid(st) && !st.frames && !posterFail.has(st.id)); let n = 0;
+    for (const st of todo) {
+      setStatus(`กำลังแปลงสติกเกอร์ ${++n}/${todo.length}`);
+      const url = URL.createObjectURL(st.blob), v = document.createElement('video');
+      v.muted = true; v.playsInline = true; v.preload = 'auto';
+      try {
+        const ok = await new Promise(res => { const t = setTimeout(() => res(false), 6000); v.onloadeddata = () => { clearTimeout(t); res(true); }; v.onerror = () => { clearTimeout(t); res(false); }; v.src = url; });
+        if (!ok || !v.videoWidth) throw 0;
+        const dur = isFinite(v.duration) && v.duration > 0 ? v.duration : 0.1;
+        const N = Math.max(1, Math.min(48, Math.round(dur * 12)));
+        const sc = Math.min(1, 220 / Math.max(v.videoWidth, v.videoHeight)), cv = document.createElement('canvas');
+        cv.width = Math.max(1, Math.round(v.videoWidth * sc)); cv.height = Math.max(1, Math.round(v.videoHeight * sc));
+        const g = cv.getContext('2d', { willReadFrequently: true }), frames = []; let good = false;
+        for (let i = 0; i < N; i++) {
+          if (N > 1) { v.currentTime = dur * i / N; await Promise.race([new Promise(r => v.addEventListener('seeked', r, { once: true })), new Promise(r => setTimeout(r, 1500))]); }
+          g.clearRect(0, 0, cv.width, cv.height); g.drawImage(v, 0, 0, cv.width, cv.height);
+          if (i === (N >> 1)) { /* ตรวจว่าถอดรหัสได้จริง: ไม่ใช่ภาพว่าง หรือโปร่งใสหายกลายเป็นพื้นดำ */
+            const d = g.getImageData(0, 0, cv.width, cv.height).data; let vis = 0, tr = 0;
+            for (let k = 3; k < d.length; k += 4) { if (d[k] > 24) vis++; if (d[k] < 250) tr++; }
+            const c = d[0] + d[1] + d[2] + (255 - d[3]);
+            good = vis > 0 && (tr > 0 || c > 24);
+            if (!good) throw 0;
+          }
+          const b = await new Promise(r => cv.toBlob(r, 'image/webp', 0.8)); if (!b) throw 0; frames.push(b);
+        }
+        st.frames = frames; st.fps = N / dur; st.poster = frames[0];
+        await req(store('stickers', 'readwrite').put(st));
+      } catch (e) { posterFail.add(st.id); }
+      v.removeAttribute('src'); v.load(); URL.revokeObjectURL(url);
+      if (n % 3 === 0) refreshStickerViews();
+    }
+    if (n) { setStatus('แปลงสติกเกอร์เสร็จแล้ว'); refreshStickerViews(); }
+  }
   const nameOf = s => s.name || 'ไม่มีชื่อ';
 
   /* ----- crop dialog ----- */
@@ -596,7 +667,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
       try { await req(store('stickers', 'readwrite').add({ ...s, ...r, created: Date.now() })); }
       catch (err) { setStatus('บันทึกสติกเกอร์ไม่สำเร็จ'); }
     }
-    await loadStickers(); renderStickerList();
+    await loadStickers(); renderStickerList(); ensurePosters();
   };
 
   /* ----- pick stickers for the open file (many allowed) ----- */
@@ -1286,6 +1357,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   async function buildBackup() {
     const ids = [...byId.keys()].sort((a, b) => a - b);
     const fl = [...folders.values()].sort((a, b) => a.id - b.id);
+    await ensurePosters();
     if (!ids.length && !fl.length && !stickers.length) { setStatus('ยังไม่มีข้อมูลให้ส่งออก'); return null; }
     const enc = new TextEncoder(), parts = [enc.encode('GALV3\n')];
     const push = (h, b) => {
@@ -1294,7 +1366,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
       parts.push(len, hb); if (b) parts.push(b);
     };
     for (const f of fl) push({ t: 'f', id: f.id, name: f.name, mime: f.cover ? f.cover.type : '', size: f.cover ? f.cover.size : 0 }, f.cover);
-    for (const st of stickers) push({ t: 's', id: st.id, name: st.name || '', mime: st.type, crop: st.crop || FULL, w: st.w || 0, h: st.h || 0, size: st.blob.size }, st.blob);
+    for (const st of stickers) { const fr = st.frames || [], bl = new Blob([st.blob, ...fr]); push({ t: 's', id: st.id, name: st.name || '', mime: st.type, crop: st.crop || FULL, w: st.w || 0, h: st.h || 0, vsize: st.blob.size, fsz: fr.map(f => f.size), fps: st.fps || 0, size: bl.size }, bl); }
     let n = 0;
     for (const id of ids) {
       setStatus(`กำลังเตรียมไฟล์สำรอง ${++n}/${ids.length}`, 0);
@@ -1338,7 +1410,8 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
           f.id = await req(store('folders', 'readwrite').add(f));
           folders.set(f.id, f); map.set(head.id, f.id);
         } else if (head.t === 's') {
-          const st = { name: head.name || '', type: head.mime, blob: new Blob([blob], { type: head.mime }), crop: head.crop || { ...FULL }, w: head.w, h: head.h, created: Date.now() + n };
+          const st = { name: head.name || '', type: head.mime, blob: new Blob([blob.slice(0, head.vsize || head.size)], { type: head.mime }), crop: head.crop || { ...FULL }, w: head.w, h: head.h, created: Date.now() + n };
+          if (head.fsz && head.fsz.length) { let o = head.vsize; st.frames = head.fsz.map(z => { const fb = new Blob([blob.slice(o, o + z)], { type: 'image/webp' }); o += z; return fb; }); st.fps = head.fps || 12; st.poster = st.frames[0]; }
           st.id = await req(store('stickers', 'readwrite').add(st));
           stickers.push(st); smap.set(head.id, st.id);
         } else {
@@ -1349,7 +1422,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
         }
       }
       showHome();
-      setStatus(`นำเข้าแล้ว ${map.size} แฟ้ม ${count} ไฟล์ ${stickers.length} สติกเกอร์`);
+      setStatus(`นำเข้าแล้ว ${map.size} แฟ้ม ${count} ไฟล์ ${stickers.length} สติกเกอร์`); ensurePosters();
     } catch (e) { setStatus('ไฟล์สำรองไม่ถูกต้อง หรืออ่านไม่สำเร็จ'); }
   }
 
@@ -1435,7 +1508,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   /* ---------- start ---------- */
   (async () => {
     try {
-      db = await openDB(); await loadStickers();
+      db = await openDB(); await loadStickers(); setTimeout(ensurePosters, 1500);
       try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
       (await req(store('meta').getAll())).forEach(m => byId.set(m.id, m));
       (await req(store('folders').getAll())).forEach(f => folders.set(f.id, f));
