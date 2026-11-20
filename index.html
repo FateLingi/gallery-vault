@@ -511,7 +511,15 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   function thumbOf(s) {
     const t = document.createElement('div'); t.className = 'stthumb';
     let u = BLANK, still = false;
-    if (isVid(s)) { still = true; if (s.poster) { u = URL.createObjectURL(s.poster); stThumbUrls.push(u); } else ensurePosters(); }
+    if (isVid(s)) {
+      still = true;
+      if (s.poster) { u = URL.createObjectURL(s.poster); stThumbUrls.push(u); }
+      else if (posterFail.has(s.id)) { /* แปลงไม่ได้ → โชว์เฟรมแรกของวิดีโอ (ถ้าเครื่องถอดรหัสได้) */
+        const c = s.crop || FULL, w = document.createElement('video'); u = URL.createObjectURL(s.blob); stThumbUrls.push(u);
+        w.muted = true; w.playsInline = true; w.preload = 'metadata'; w.src = u + '#t=0.1';
+        w.style.cssText = 'max-width:100%;max-height:84px'; t.appendChild(w); return t;
+      } else ensurePosters();
+    }
     else { u = URL.createObjectURL(s.blob); stThumbUrls.push(u); }
     t.appendChild(mkSticker(s, u, 100, 84, still)); return t;
   }
@@ -523,7 +531,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     if (b.open) { const m = byId.get(vId); if (m) { const y = b.scrollTop; renderPick(m); b.scrollTop = y; } }
   }
   let posterP = null;
-  function ensurePosters() { if (!posterP) posterP = convertStickers().finally(() => { posterP = null; }); return posterP; }
+  function ensurePosters(retry) { if (retry) posterFail.clear(); if (!posterP) posterP = convertStickers().finally(() => { posterP = null; }); return posterP; }
   /* แปลงสติกเกอร์วิดีโอเป็นชุดภาพ WebP (มีช่องโปร่งใส) เก็บไว้ในไฟล์สำรองด้วย
      มือถือจะเล่นจากชุดภาพนี้ ไม่ต้องถอดรหัสวิดีโอโปร่งใสซึ่งหลายเครื่องทำไม่ได้ */
   async function convertStickers() {
@@ -531,17 +539,24 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     for (const st of todo) {
       setStatus(`กำลังแปลงสติกเกอร์ ${++n}/${todo.length}`);
       const url = URL.createObjectURL(st.blob), v = document.createElement('video');
-      v.muted = true; v.playsInline = true; v.preload = 'auto';
+      v.muted = true; v.defaultMuted = true; v.playsInline = true; v.preload = 'auto'; v.setAttribute('playsinline', ''); v.setAttribute('muted', '');
+      /* มือถือไม่โหลดวิดีโอที่ไม่ได้อยู่ในหน้า/ไม่ได้ play จึงใส่ไว้ในหน้าแบบซ่อน แล้วสั่ง play ให้เริ่มถอดรหัส */
+      v.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none;z-index:-1'; document.body.appendChild(v);
       try {
-        const ok = await new Promise(res => { const t = setTimeout(() => res(false), 6000); v.onloadeddata = () => { clearTimeout(t); res(true); }; v.onerror = () => { clearTimeout(t); res(false); }; v.src = url; });
+        const ok = await new Promise(res => {
+          const t = setTimeout(() => res(false), 15000), done = r => { clearTimeout(t); res(r); };
+          v.onloadeddata = () => done(true); v.oncanplay = () => done(true); v.onerror = () => done(false);
+          v.src = url; v.load(); const pp = v.play(); if (pp && pp.catch) pp.catch(() => {});
+        });
         if (!ok || !v.videoWidth) throw 0;
+        v.pause();
         const dur = isFinite(v.duration) && v.duration > 0 ? v.duration : 0.1;
         const N = Math.max(1, Math.min(48, Math.round(dur * 12)));
         const sc = Math.min(1, 220 / Math.max(v.videoWidth, v.videoHeight)), cv = document.createElement('canvas');
         cv.width = Math.max(1, Math.round(v.videoWidth * sc)); cv.height = Math.max(1, Math.round(v.videoHeight * sc));
         const g = cv.getContext('2d', { willReadFrequently: true }), frames = []; let good = false;
         for (let i = 0; i < N; i++) {
-          if (N > 1) { v.currentTime = dur * i / N; await Promise.race([new Promise(r => v.addEventListener('seeked', r, { once: true })), new Promise(r => setTimeout(r, 1500))]); }
+          if (N > 1) { v.currentTime = dur * i / N; await Promise.race([new Promise(r => v.addEventListener('seeked', r, { once: true })), new Promise(r => setTimeout(r, 3000))]); }
           g.clearRect(0, 0, cv.width, cv.height); g.drawImage(v, 0, 0, cv.width, cv.height);
           if (i === (N >> 1)) { /* ตรวจว่าถอดรหัสได้จริง: ไม่ใช่ภาพว่าง หรือโปร่งใสหายกลายเป็นพื้นดำ */
             const d = g.getImageData(0, 0, cv.width, cv.height).data; let vis = 0, tr = 0;
@@ -555,7 +570,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
         st.frames = frames; st.fps = N / dur; st.poster = frames[0];
         await req(store('stickers', 'readwrite').put(st));
       } catch (e) { posterFail.add(st.id); }
-      v.removeAttribute('src'); v.load(); URL.revokeObjectURL(url);
+      v.removeAttribute('src'); v.load(); v.remove(); URL.revokeObjectURL(url);
       if (n % 3 === 0) refreshStickerViews();
     }
     if (n) { setStatus('แปลงสติกเกอร์เสร็จแล้ว'); refreshStickerViews(); }
@@ -655,7 +670,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
       row.append(ed, del); box.append(thumbOf(s), nm, row); list.appendChild(box);
     });
   }
-  $('#stickerOpen').onclick = () => { closeMenus(); renderStickerList(); $('#stickerDlg').showModal(); };
+  $('#stickerOpen').onclick = () => { closeMenus(); renderStickerList(); $('#stickerDlg').showModal(); ensurePosters(true); };
   $('#stClose').onclick = () => $('#stickerDlg').close();
   $('#stickerDlg').addEventListener('close', () => { freeThumbs(); $('#stList').replaceChildren(); });
   $('#stAdd').onclick = () => $('#stickerIn').click();
