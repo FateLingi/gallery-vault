@@ -135,30 +135,13 @@ main{padding:12px 16px 80px}
   border:1px solid transparent; border-radius:8px; padding:10px 12px; font:inherit; font-size:1rem; line-height:1.5;
 }
 #vcap:focus{border-color:var(--accent); outline:none}
-#capwrap{position:relative}
-#vsticker{position:absolute; right:12px; bottom:10px; pointer-events:none; display:none}
-#capwrap.hasst #vsticker{display:flex; gap:6px; align-items:flex-end}
-.stbadge{position:absolute; top:4px; right:4px; min-width:22px; height:22px; border-radius:11px; background:var(--accent); color:var(--on-accent); font-size:.8rem; font-weight:700; display:flex; align-items:center; justify-content:center}
-#capwrap.hasst #vcap{padding-right:calc(var(--stw,100px) + 24px)}
-.scrop{position:relative; overflow:hidden; flex:none}
-.scrop img,.scrop video,.scrop canvas{display:block; position:absolute; max-width:none; max-height:none; object-fit:fill; background:transparent; -webkit-user-drag:none}
-#vstk{background:transparent; color:var(--muted)}
-#vstk:hover{color:var(--text)}
-#cropStage{display:flex; justify-content:center; margin:10px 0}
-#cropBox{position:relative; line-height:0; overflow:hidden; touch-action:none; background:repeating-conic-gradient(#7778 0% 25%,#0000 0% 50%) 50%/16px 16px,#1a1a1a}
-#cropBox>img,#cropBox>video{max-width:100%; max-height:48vh; display:block}
-#cropRect{position:absolute; border:2px solid var(--accent); box-shadow:0 0 0 9999px rgba(0,0,0,.55); cursor:move; touch-action:none}
-#cropRect i{position:absolute; width:22px; height:22px; border-radius:50%; background:var(--accent); border:2px solid var(--on-accent); touch-action:none}
-#hTL{left:-11px; top:-11px; cursor:nwse-resize}
-#hBR{right:-11px; bottom:-11px; cursor:nwse-resize}
-.stgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px; margin-bottom:12px}
-.stitem{position:relative; background:var(--panel2); border-radius:8px; padding:6px; display:flex; flex-direction:column; gap:6px; align-items:center; min-width:0}
-.stthumb{height:84px; width:100%; display:flex; align-items:center; justify-content:center}
-.stname{font-size:.85rem; color:var(--muted); max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.strow{display:flex; gap:6px; width:100%}
-.strow button{flex:1}
-.stitem.sel{outline:2px solid var(--accent)}
-.stitem button{min-height:32px; padding:4px 8px; font-size:.9rem}
+body.space1 #coverSet,body.space1 .lockbtn{display:none!important}
+body.space1 #hHome h1{-webkit-user-select:none; user-select:none; -webkit-touch-callout:none; cursor:default}
+.lockbtn{background:transparent}
+#lockDlg select,#lockDlg input{width:100%}
+#lockDlg .lk{margin:12px 0 4px; font-weight:600}
+#lockDlg p.sm{color:var(--muted); font-size:.88rem; margin:4px 0}
+#pinMsg{color:var(--danger); min-height:1.2em; margin:6px 0 0; font-size:.9rem}
 #vcap::placeholder{color:var(--muted)}
 .tag-panel{margin-top:8px; border:1px solid var(--panel2); border-radius:8px; background:rgba(0,0,0,.08); overflow:hidden}
 .tag-panel summary{cursor:pointer; padding:7px 10px; color:var(--muted); font-size:.88rem; list-style:none}
@@ -234,6 +217,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
 <header id="hHome">
   <h1>VELORA</h1>
   <div class="actions">
+    <button class="lockbtn" type="button" aria-label="กลับหน้า 1" title="กลับหน้า 1">🔒</button>
     <button id="newFolder" class="primary" type="button">+ สร้างแฟ้ม</button>
     <button id="addHome" type="button">เพิ่มไฟล์</button>
     <details class="more">
@@ -241,7 +225,8 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
       <div class="menu">
         <button id="export" type="button">ส่งออกไฟล์สำรอง (.galv)</button>
         <button id="import" type="button">นำเข้าไฟล์สำรอง (.galv)</button>
-        <button id="stickerOpen" type="button">สติกเกอร์ · อัปโหลด/ลบ</button>
+        <button id="coverSet" type="button">หน้าบัง · ตั้งค่า</button>
+        <button class="lockbtn" type="button">🔒 กลับหน้า 1 (ล็อก)</button>
         <button id="storageOpen" type="button">Storage Manager · พื้นที่จัดเก็บ</button>
         <label class="theme-label" for="themeSelect">ธีมสีแอป</label>
         <select id="themeSelect" class="theme-select">
@@ -261,6 +246,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     <h1><span id="fnameT"></span><small id="fcount"></small></h1>
   </div>
   <div class="actions">
+    <button class="lockbtn" type="button" aria-label="กลับหน้า 1" title="กลับหน้า 1">🔒</button>
     <button id="add" class="primary" type="button">เพิ่มไฟล์</button>
     <button id="shuffle" type="button">สุ่มใหม่</button>
     <details class="more" id="fmenu">
@@ -301,7 +287,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     <button id="nextV" class="vnav" type="button" aria-label="ถัดไป">›</button>
   </div>
   <div id="vbar">
-    <div id="capwrap"><textarea id="vcap" rows="6" maxlength="2000" placeholder="เขียนข้อความ..."></textarea><div id="vsticker" aria-hidden="true"></div></div>
+    <textarea id="vcap" rows="6" maxlength="2000" placeholder="เขียนข้อความ..."></textarea>
     <div class="tag-strip">
       <div id="vTags" aria-label="แท็คของไฟล์นี้"></div>
       <button id="tagToggle" class="tag-plus" type="button" aria-label="เพิ่มแท็ค" title="เพิ่มแท็ค">＋</button>
@@ -313,7 +299,6 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     <div class="vrow">
       <span id="vstate"></span>
       <button id="vsave" class="primary" type="button" hidden>บันทึก</button>
-      <button id="vstk" type="button">สติกเกอร์</button>
       <button id="vmove" type="button">ย้าย</button>
       <button id="vdel" type="button">ลบ</button>
     </div>
@@ -330,27 +315,28 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   <p style="color:var(--muted);font-size:.88rem">หมายเหตุ: ตำแหน่ง IndexedDB ถูกควบคุมโดยระบบปฏิบัติการและเบราว์เซอร์ การเลือกโฟลเดอร์ปลายทางโดยตรงยังไม่รองรับในทุกอุปกรณ์ การย้ายข้อมูลควรใช้ส่งออก/นำเข้าไฟล์สำรอง</p>
   <div class="dbtn"><button type="button" id="storageRefresh">ตรวจสอบอีกครั้ง</button><button type="button" id="storageClose" class="primary">ปิด</button></div>
 </dialog>
-<dialog id="stickerDlg" style="width:min(92vw,520px)">
-  <label>สติกเกอร์</label>
-  <p style="color:var(--muted);margin:0 0 12px">อัปโหลด ครอบตัด และตั้งชื่อได้ (ชื่อใช้ตอนเลือกเท่านั้น ไม่โชว์ตอนแปะ) แล้วเลือกสติกเกอร์ให้แต่ละรูป/วิดีโอจากปุ่ม "สติกเกอร์" ในหน้าดูไฟล์</p>
-  <div id="stList" class="stgrid"></div>
-  <p id="stProg" hidden style="color:var(--accent);margin:0 0 10px"></p>
-  <p id="stEmpty" style="color:var(--muted)">ยังไม่มีสติกเกอร์</p>
-  <div class="dbtn"><button type="button" id="stAdd">+ อัปโหลด</button><button type="button" id="stClose" class="primary">ปิด</button></div>
+<dialog id="pinDlg" style="width:min(86vw,340px)">
+  <label for="pinIn">รหัสผ่าน</label>
+  <input id="pinIn" type="password" inputmode="numeric" autocomplete="off" maxlength="12">
+  <div id="pinMsg" role="alert"></div>
+  <div class="dbtn"><button type="button" id="pinNo">ยกเลิก</button><button type="button" id="pinOk" class="primary">ตกลง</button></div>
 </dialog>
-<dialog id="cropDlg" style="width:min(94vw,560px)">
-  <label for="cropName">ชื่อสติกเกอร์</label>
-  <input id="cropName" type="text" maxlength="40" autocomplete="off" placeholder="เช่น ดวงอาทิตย์ (ร้อนจัง)">
-  <p style="color:var(--muted);margin:8px 0 0;font-size:.88rem">ลากกรอบเพื่อย้าย ลากจุดมุมเพื่อปรับขนาด</p>
-  <div id="cropStage"><div id="cropBox"><div id="cropRect"><i id="hTL"></i><i id="hBR"></i></div></div></div>
-  <div class="dbtn" style="flex-wrap:wrap"><button type="button" id="cropTrim">ตัดขอบว่างอัตโนมัติ</button><button type="button" id="cropReset">รีเซ็ต</button><button type="button" id="cropNo">ยกเลิก</button><button type="button" id="cropOk" class="primary">บันทึก</button></div>
-</dialog>
-<dialog id="stPickDlg" style="width:min(92vw,520px)">
-  <label>เลือกสติกเกอร์ให้ไฟล์นี้</label>
-  <p style="color:var(--muted);margin:0 0 10px;font-size:.88rem">แตะเพื่อเลือก/ยกเลิก เลือกได้หลายอัน ตัวเลขคือลำดับจากซ้ายไปขวา</p>
-  <div id="stPickList" class="stgrid"></div>
-  <p id="stPickEmpty" style="color:var(--muted)">ยังไม่มีสติกเกอร์ เพิ่มได้ที่เมนู ⋯ → สติกเกอร์</p>
-  <div class="dbtn"><button type="button" id="stPickNone">ล้างทั้งหมด</button><button type="button" id="stPickClose" class="primary">เสร็จ</button></div>
+<dialog id="lockDlg" style="width:min(92vw,520px)">
+  <label>หน้าบัง (หน้า 1) · ตั้งค่า</label>
+  <p class="sm">เปิดแอปมาจะเจอหน้า 1 ซึ่งเป็นแกลเลอรีรูปทั่วไป ไปหน้า 2 โดยแตะคำว่า <b>VELORA</b> ที่หัวหน้า 1 ติดกัน 5 ครั้ง หรือกดค้างไว้ 1 วินาที</p>
+  <div class="lk">กลับหน้า 1 อัตโนมัติ</div>
+  <select id="lockMode">
+    <option value="now">ทันทีที่ออกจากแอป (ปลอดภัยสุด)</option>
+    <option value="5m">เมื่อออกจากแอปเกิน 5 นาที</option>
+    <option value="never">ไม่กลับเอง (จนกว่ากดปุ่ม 🔒)</option>
+  </select>
+  <div class="lk">รหัสผ่านตอนไปหน้า 2 (ไม่บังคับ)</div>
+  <p class="sm" id="pinState"></p>
+  <input id="pinNew" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="รหัสตัวเลข 4–12 หลัก">
+  <div class="dbtn" style="margin-top:8px"><button type="button" id="pinClear">ลบรหัส</button><button type="button" id="pinSet">ตั้งรหัส</button></div>
+  <div class="lk">รูปหน้า 1</div>
+  <p class="sm">หน้า 1 ใช้งานเหมือนหน้า 2 ทุกอย่าง (แฟ้ม แท็ก ส่งออก/นำเข้า) เพิ่มรูปได้ที่หน้า 1 โดยตรง หรือเปิดรูปในหน้า 2 แล้วกด "ย้าย" เลือก "หน้า 1" ไฟล์สำรอง (.galv) เก็บทั้งสองหน้าไว้ในไฟล์เดียว และนำเข้ากลับมาแยกหน้าให้ตามเดิม</p>
+  <div class="dbtn"><button type="button" id="lockClose" class="primary">ปิด</button></div>
 </dialog>
 <dialog id="nameDlg">
   <label id="nameT" for="nameIn"></label>
@@ -370,7 +356,6 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   </div>
 </dialog>
 
-<input id="stickerIn" type="file" accept="image/*,video/*" multiple hidden>
 <input id="fileIn" type="file" accept="image/*,video/*" multiple hidden>
 <input id="coverIn" type="file" accept="image/*" hidden>
 <input id="backupIn" type="file" accept=".galv" hidden>
@@ -418,7 +403,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
 
   const grid = $('#grid'), viewer = $('#viewer'), statusEl = $('#status'), fgrid = $('#fgrid');
   const BATCH = 48, THUMB_MAX = 960, COVER_MAX = 640, TV = 2;
-  const UNFILED = 0;
+  const UNFILED = 0, COVER = -1;
   let db, rendered = 0, order = [], curFolder = null;   // curFolder: null = home, 0 = unfiled, n = folder id
   const byId = new Map();       // files
   const folders = new Map();    // folders
@@ -435,7 +420,6 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
           d.createObjectStore('files', { keyPath: 'id' });
         }
         if (e.oldVersion < 2) d.createObjectStore('folders', { keyPath: 'id', autoIncrement: true });
-        if (e.oldVersion < 3) d.createObjectStore('stickers', { keyPath: 'id', autoIncrement: true });
       };
       r.onsuccess = () => res(r.result);
       r.onerror = () => rej(r.error);
@@ -446,276 +430,6 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   const getFile = async id => { const r = await req(store('files').get(id)); return r && r.blob; };
   const putMeta = m => req(store('meta', 'readwrite').put(m));
   const putFolder = f => req(store('folders', 'readwrite').put(f));
-
-  /* ---------- stickers ---------- */
-  let stickers = [], stickUrls = [], stThumbUrls = [];
-  const stIds = m => Array.isArray(m.stickers) ? m.stickers : (m.sticker ? [m.sticker] : []);
-  const FULL = { x: 0, y: 0, w: 1, h: 1 };
-  const isVid = s => (s.type || '').startsWith('video/');
-  async function loadStickers() { try { stickers = await req(store('stickers').getAll()); } catch (e) { stickers = []; } }
-  /* ครอบตัดแบบไม่แตะไฟล์ต้นฉบับ: เก็บสัดส่วนกรอบไว้ แล้วเลื่อน/ขยายสื่อในกรอบตอนแสดง */
-  function mkSticker(s, url, bw, bh, still) {
-    const c = s.crop || FULL;
-    const ar = (c.w * (s.w || 1)) / (c.h * (s.h || 1));
-    let h = bh, w = h * ar; if (w > bw) { w = bw; h = w / ar; }
-    const wrap = document.createElement('div'); wrap.className = 'scrop';
-    wrap.style.width = w + 'px'; wrap.style.height = h + 'px'; wrap._w = w; wrap._h = h; wrap._s = s;
-    const useF = !still && s.frames && s.frames.length, v = isVid(s) && !still && !useF, el = document.createElement(useF ? 'canvas' : v ? 'video' : 'img');
-    if (v) { el.muted = true; el.defaultMuted = true; el.loop = true; el.autoplay = true; el.playsInline = true; el.controls = false; }
-    else { el.alt = ''; el.draggable = false; }
-    el.style.width = (100 / c.w) + '%'; el.style.height = (100 / c.h) + '%';
-    el.style.left = (-c.x / c.w * 100) + '%'; el.style.top = (-c.y / c.h * 100) + '%';
-    if (useF) playFrames(el, s); else { el.src = url; if (v) el.play().catch(() => {}); }
-    wrap.appendChild(el); return wrap;
-  }
-  async function playFrames(cv, s) {
-    const bm = [];
-    try { for (const f of s.frames) bm.push(await createImageBitmap(f)); } catch (e) { return; }
-    if (!bm.length) return;
-    cv.width = bm[0].width; cv.height = bm[0].height; const g = cv.getContext('2d');
-    let i = 0, last = 0; const step = 1000 / (s.fps || 12);
-    const tick = t => {
-      if (i > 0 && !cv.isConnected) { bm.forEach(b => b.close && b.close()); return; }
-      if (t - last >= step) { last = t; g.clearRect(0, 0, cv.width, cv.height); g.drawImage(bm[i % bm.length], 0, 0); i++; }
-      requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }
-  function clearSticker() {
-    const box = $('#vsticker'); box.querySelectorAll('video').forEach(n => { n.pause(); n.removeAttribute('src'); n.load(); });
-    box.replaceChildren(); $('#capwrap').classList.remove('hasst');
-    stickUrls.forEach(u => URL.revokeObjectURL(u)); stickUrls = [];
-  }
-  /* สติกเกอร์หลายอันเรียงเป็นแถวที่มุมล่างขวาช่องข้อความ ถ้ากว้างเกินครึ่งช่องจะย่อให้พอดี */
-  function applySticker(m) {
-    clearSticker();
-    const list = m ? stIds(m).map(id => stickers.find(x => x.id === id)).filter(Boolean) : [];
-    if (!list.length) return;
-    const GAP = 6, cap = $('#capwrap'), box = $('#vsticker');
-    const cw = cap.clientWidth || (Math.min(window.innerWidth, 720) - 24), maxW = Math.max(110, cw * 0.5);
-    const build = k => {
-      clearSticker(); let tot = -GAP;
-      list.forEach(st => { const u = URL.createObjectURL(st.blob); stickUrls.push(u); const w = mkSticker(st, u, 160 * k, 96 * k); box.appendChild(w); tot += w._w + GAP; });
-      return tot;
-    };
-    let tot = build(1); if (tot > maxW) tot = build(maxW / tot);
-    cap.style.setProperty('--stw', tot + 'px'); cap.classList.add('hasst');
-    setTimeout(() => {
-      box.querySelectorAll('.scrop').forEach(w => {
-        const v = w.querySelector('video');
-        if (v && v.readyState < 2 && w._s && w._s.poster) { const u = URL.createObjectURL(w._s.poster); stickUrls.push(u); w.replaceWith(mkSticker(w._s, u, w._w, w._h, true)); }
-      });
-    }, 1500);
-  }
-  function freeThumbs() { stThumbUrls.forEach(u => URL.revokeObjectURL(u)); stThumbUrls = []; }
-  const BLANK = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
-  function thumbOf(s) {
-    const t = document.createElement('div'); t.className = 'stthumb';
-    let u = BLANK, still = false;
-    if (isVid(s)) {
-      still = true;
-      if (s.poster) { u = URL.createObjectURL(s.poster); stThumbUrls.push(u); }
-      else if (posterFail.has(s.id)) { /* แปลงไม่ได้ → โชว์เฟรมแรกของวิดีโอ (ถ้าเครื่องถอดรหัสได้) */
-        const c = s.crop || FULL, w = document.createElement('video'); u = URL.createObjectURL(s.blob); stThumbUrls.push(u);
-        w.muted = true; w.playsInline = true; w.preload = 'metadata'; w.src = u + '#t=0.1';
-        w.style.cssText = 'max-width:100%;max-height:84px'; t.appendChild(w); return t;
-      } else ensurePosters();
-    }
-    else { u = URL.createObjectURL(s.blob); stThumbUrls.push(u); }
-    t.appendChild(mkSticker(s, u, 100, 84, still)); return t;
-  }
-  /* สร้างภาพนิ่ง (poster) ของสติกเกอร์วิดีโอทีละตัว ใช้เป็นภาพตัวอย่างในรายการ ไม่ต้องเล่นวิดีโอพร้อมกันหลายตัว (มือถือถอดรหัสได้จำกัด) */
-  let posterRun = false; const posterFail = new Set();
-  function refreshStickerViews() {
-    const a = $('#stickerDlg'), b = $('#stPickDlg');
-    if (a.open) { const y = a.scrollTop; renderStickerList(); a.scrollTop = y; }
-    if (b.open) { const m = byId.get(vId); if (m) { const y = b.scrollTop; renderPick(m); b.scrollTop = y; } }
-  }
-  let posterP = null;
-  function ensurePosters(retry) { if (retry) posterFail.clear(); if (!posterP) posterP = convertStickers().finally(() => { posterP = null; }); return posterP; }
-  /* แปลงสติกเกอร์วิดีโอเป็นชุดภาพ WebP (มีช่องโปร่งใส) เก็บไว้ในไฟล์สำรองด้วย
-     มือถือจะเล่นจากชุดภาพนี้ ไม่ต้องถอดรหัสวิดีโอโปร่งใสซึ่งหลายเครื่องทำไม่ได้ */
-  async function convertStickers() {
-    const todo = stickers.filter(st => isVid(st) && !st.frames && !posterFail.has(st.id)); let n = 0;
-    for (const st of todo) {
-      const msg = `กำลังแปลงสติกเกอร์ ${++n}/${todo.length} (รอสักครู่ ห้ามปิดหน้านี้)`; setStatus(msg, 0); const pe = $('#stProg'); if (pe) { pe.textContent = msg; pe.hidden = false; }
-      const url = URL.createObjectURL(st.blob), v = document.createElement('video');
-      v.muted = true; v.defaultMuted = true; v.playsInline = true; v.preload = 'auto'; v.setAttribute('playsinline', ''); v.setAttribute('muted', '');
-      /* มือถือไม่โหลดวิดีโอที่ไม่ได้อยู่ในหน้า/ไม่ได้ play จึงใส่ไว้ในหน้าแบบซ่อน แล้วสั่ง play ให้เริ่มถอดรหัส */
-      v.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none;z-index:-1'; document.body.appendChild(v);
-      try {
-        const ok = await new Promise(res => {
-          const t = setTimeout(() => res(false), 15000), done = r => { clearTimeout(t); res(r); };
-          v.onloadeddata = () => done(true); v.oncanplay = () => done(true); v.onerror = () => done(false);
-          v.src = url; v.load(); const pp = v.play(); if (pp && pp.catch) pp.catch(() => {});
-        });
-        if (!ok || !v.videoWidth) throw 0;
-        v.pause();
-        const dur = isFinite(v.duration) && v.duration > 0 ? v.duration : 0.1;
-        const N = Math.max(1, Math.min(48, Math.round(dur * 12)));
-        const sc = Math.min(1, 220 / Math.max(v.videoWidth, v.videoHeight)), cv = document.createElement('canvas');
-        cv.width = Math.max(1, Math.round(v.videoWidth * sc)); cv.height = Math.max(1, Math.round(v.videoHeight * sc));
-        const g = cv.getContext('2d', { willReadFrequently: true }), frames = []; let good = false;
-        for (let i = 0; i < N; i++) {
-          if (N > 1) { v.currentTime = dur * i / N; await Promise.race([new Promise(r => v.addEventListener('seeked', r, { once: true })), new Promise(r => setTimeout(r, 3000))]); }
-          g.clearRect(0, 0, cv.width, cv.height); g.drawImage(v, 0, 0, cv.width, cv.height);
-          if (i === (N >> 1)) { /* ตรวจว่าถอดรหัสได้จริง: ไม่ใช่ภาพว่าง หรือโปร่งใสหายกลายเป็นพื้นดำ */
-            const d = g.getImageData(0, 0, cv.width, cv.height).data; let vis = 0, tr = 0;
-            for (let k = 3; k < d.length; k += 4) { if (d[k] > 24) vis++; if (d[k] < 250) tr++; }
-            const c = d[0] + d[1] + d[2] + (255 - d[3]);
-            good = vis > 0 && (tr > 0 || c > 24);
-            if (!good) throw 0;
-          }
-          const b = await new Promise(r => cv.toBlob(r, 'image/webp', 0.8)); if (!b) throw 0; frames.push(b);
-        }
-        st.frames = frames; st.fps = N / dur; st.poster = frames[0];
-        await req(store('stickers', 'readwrite').put(st));
-      } catch (e) { posterFail.add(st.id); }
-      v.removeAttribute('src'); v.load(); v.remove(); URL.revokeObjectURL(url);
-      if (n % 3 === 0) refreshStickerViews();
-    }
-    const pe = $('#stProg'); if (pe) pe.hidden = true;
-    if (n) { const bad = posterFail.size; setStatus(bad ? `แปลงเสร็จ แต่ล้มเหลว ${bad} อัน (เครื่องถอดรหัสไม่ได้)` : 'แปลงสติกเกอร์เสร็จแล้ว', 6000); refreshStickerViews(); }
-  }
-  const nameOf = s => s.name || 'ไม่มีชื่อ';
-
-  /* ----- crop dialog ----- */
-  let crop = { ...FULL };
-  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-  function drawRect() { const r = $('#cropRect').style; r.left = crop.x * 100 + '%'; r.top = crop.y * 100 + '%'; r.width = crop.w * 100 + '%'; r.height = crop.h * 100 + '%'; }
-  function dragCrop(mode, e) {
-    e.preventDefault(); e.stopPropagation();
-    const el = e.currentTarget, box = $('#cropBox').getBoundingClientRect(), st = { ...crop }, px = e.clientX, py = e.clientY, MIN = 0.05;
-    el.setPointerCapture(e.pointerId);
-    const mv = ev => {
-      const dx = (ev.clientX - px) / box.width, dy = (ev.clientY - py) / box.height; let { x, y, w, h } = st;
-      if (mode === 'move') { x = clamp(x + dx, 0, 1 - w); y = clamp(y + dy, 0, 1 - h); }
-      else if (mode === 'br') { w = clamp(w + dx, MIN, 1 - x); h = clamp(h + dy, MIN, 1 - y); }
-      else { const nx = clamp(x + dx, 0, x + w - MIN), ny = clamp(y + dy, 0, y + h - MIN); w += x - nx; h += y - ny; x = nx; y = ny; }
-      crop = { x, y, w, h }; drawRect();
-    };
-    const up = () => { el.removeEventListener('pointermove', mv); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up); };
-    el.addEventListener('pointermove', mv); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
-  }
-  $('#cropRect').addEventListener('pointerdown', e => { if (e.target === e.currentTarget) dragCrop('move', e); });
-  $('#hTL').addEventListener('pointerdown', e => dragCrop('tl', e));
-  $('#hBR').addEventListener('pointerdown', e => dragCrop('br', e));
-  /* หาขอบของส่วนที่ไม่โปร่งใส (วิดีโอสุ่มดูหลายช่วงเวลา) */
-  async function autoTrim(media, v) {
-    const W = v ? media.videoWidth : media.naturalWidth, H = v ? media.videoHeight : media.naturalHeight;
-    const sc = Math.min(1, 400 / Math.max(W, H)), cw = Math.max(1, Math.round(W * sc)), ch = Math.max(1, Math.round(H * sc));
-    const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
-    const g = cv.getContext('2d', { willReadFrequently: true });
-    let x0 = cw, y0 = ch, x1 = 0, y1 = 0; const N = v ? 8 : 1;
-    if (v) media.pause();
-    for (let i = 0; i < N; i++) {
-      if (v && media.duration) {
-        media.currentTime = media.duration * i / N;
-        await Promise.race([new Promise(r => media.addEventListener('seeked', r, { once: true })), new Promise(r => setTimeout(r, 700))]);
-      }
-      g.clearRect(0, 0, cw, ch); g.drawImage(media, 0, 0, cw, ch);
-      const d = g.getImageData(0, 0, cw, ch).data;
-      for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) if (d[(y * cw + x) * 4 + 3] > 24) { if (x < x0) x0 = x; if (x >= x1) x1 = x + 1; if (y < y0) y0 = y; if (y >= y1) y1 = y + 1; }
-    }
-    if (v) media.play().catch(() => {});
-    if (x1 <= x0 || y1 <= y0) return null;
-    const px = 0.02, nx = clamp(x0 / cw - px, 0, 1), ny = clamp(y0 / ch - px, 0, 1);
-    return { x: nx, y: ny, w: clamp(x1 / cw + px, 0, 1) - nx, h: clamp(y1 / ch + px, 0, 1) - ny };
-  }
-  function openCrop(s) {
-    return new Promise(async resolve => {
-      const dlg = $('#cropDlg'), url = URL.createObjectURL(s.blob), v = isVid(s), el = document.createElement(v ? 'video' : 'img');
-      if (v) { el.muted = true; el.loop = true; el.autoplay = true; el.playsInline = true; } else el.draggable = false;
-      const box = $('#cropBox'); box.querySelectorAll('img,video').forEach(n => n.remove()); box.prepend(el);
-      const loaded = new Promise(r => { el.onload = r; el.onloadedmetadata = r; el.onerror = r; }); el.src = url; await loaded;
-      const W = v ? el.videoWidth : el.naturalWidth, H = v ? el.videoHeight : el.naturalHeight;
-      const cleanup = () => { if (v) { el.pause(); el.removeAttribute('src'); el.load(); } el.remove(); URL.revokeObjectURL(url); };
-      if (!W || !H) { cleanup(); setStatus('อ่านไฟล์สติกเกอร์ไม่ได้'); resolve(null); return; }
-      if (v) el.play().catch(() => {});
-      $('#cropName').value = s.name || ''; crop = s.crop ? { ...s.crop } : { ...FULL }; drawRect();
-      let ok = false;
-      $('#cropReset').onclick = () => { crop = { ...FULL }; drawRect(); };
-      $('#cropTrim').onclick = async () => {
-        try { const c = await autoTrim(el, v); if (c) { crop = c; drawRect(); } else setStatus('ไม่พบพื้นที่โปร่งใสให้ตัด'); }
-        catch (e) { setStatus('ตัดขอบอัตโนมัติไม่สำเร็จ ลองปรับกรอบเอง'); }
-      };
-      $('#cropOk').onclick = () => { ok = true; dlg.close(); };
-      $('#cropNo').onclick = () => dlg.close();
-      dlg.onclose = () => { cleanup(); resolve(ok ? { name: $('#cropName').value.trim().slice(0, 40), crop: { ...crop }, w: W, h: H } : null); };
-      dlg.showModal();
-    });
-  }
-
-  /* ----- sticker library dialog ----- */
-  function renderStickerList() {
-    freeThumbs(); const list = $('#stList'); list.replaceChildren(); $('#stEmpty').hidden = stickers.length > 0;
-    stickers.forEach(s => {
-      const box = document.createElement('div'); box.className = 'stitem';
-      const nm = document.createElement('div'); nm.className = 'stname'; nm.textContent = nameOf(s);
-      const row = document.createElement('div'); row.className = 'strow';
-      const ed = document.createElement('button'); ed.type = 'button'; ed.textContent = 'แก้ไข';
-      ed.onclick = async () => {
-        const r = await openCrop(s); if (!r) return;
-        Object.assign(s, r);
-        try { await req(store('stickers', 'readwrite').put(s)); } catch (e) { setStatus('บันทึกไม่สำเร็จ'); }
-        renderStickerList();
-      };
-      const del = document.createElement('button'); del.type = 'button'; del.textContent = 'ลบ';
-      del.onclick = async () => {
-        if (!confirm('ลบสติกเกอร์นี้? ไฟล์ที่ใช้สติกเกอร์นี้จะกลายเป็นไม่มีสติกเกอร์')) return;
-        try { await req(store('stickers', 'readwrite').delete(s.id)); } catch (e) { setStatus('ลบไม่สำเร็จ'); return; }
-        stickers = stickers.filter(x => x.id !== s.id);
-        for (const m of byId.values()) { const ids = stIds(m); if (ids.includes(s.id)) { const nx = ids.filter(x => x !== s.id); if (nx.length) m.stickers = nx; else delete m.stickers; delete m.sticker; try { await putMeta(m); } catch (e) {} } }
-        if (!viewer.hidden) applySticker(byId.get(vId));
-        renderStickerList();
-      };
-      row.append(ed, del); box.append(thumbOf(s), nm, row); list.appendChild(box);
-    });
-  }
-  $('#stickerOpen').onclick = () => { closeMenus(); renderStickerList(); $('#stickerDlg').showModal(); ensurePosters(true); };
-  $('#stClose').onclick = () => $('#stickerDlg').close();
-  $('#stickerDlg').addEventListener('close', () => { freeThumbs(); $('#stList').replaceChildren(); });
-  $('#stAdd').onclick = () => $('#stickerIn').click();
-  $('#stickerIn').onchange = async e => {
-    const files = [...e.target.files].filter(f => /^(image|video)\//.test(f.type)); e.target.value = '';
-    for (const f of files) {
-      const s = { blob: f, type: f.type, name: f.name.replace(/\.[^.]+$/, '').slice(0, 40) };
-      const r = await openCrop(s); if (!r) continue;
-      try { await req(store('stickers', 'readwrite').add({ ...s, ...r, created: Date.now() })); }
-      catch (err) { setStatus('บันทึกสติกเกอร์ไม่สำเร็จ'); }
-    }
-    await loadStickers(); renderStickerList(); ensurePosters();
-  };
-
-  /* ----- pick stickers for the open file (many allowed) ----- */
-  async function saveItemStickers(m, arr) {
-    if (arr.length) m.stickers = arr; else delete m.stickers;
-    delete m.sticker;
-    try { await putMeta(m); } catch (e) { setStatus('บันทึกไม่สำเร็จ'); }
-    applySticker(m);
-  }
-  function renderPick(m) {
-    freeThumbs(); const list = $('#stPickList'); list.replaceChildren(); $('#stPickEmpty').hidden = stickers.length > 0;
-    const cur = stIds(m);
-    stickers.forEach(st => {
-      const i = cur.indexOf(st.id);
-      const b = document.createElement('button'); b.type = 'button'; b.className = 'stitem' + (i >= 0 ? ' sel' : '');
-      const nm = document.createElement('div'); nm.className = 'stname'; nm.textContent = nameOf(st);
-      b.append(thumbOf(st), nm);
-      if (i >= 0) { const bd = document.createElement('span'); bd.className = 'stbadge'; bd.textContent = i + 1; b.appendChild(bd); }
-      b.onclick = async () => {
-        const c = stIds(m).slice(), k = c.indexOf(st.id);
-        if (k >= 0) c.splice(k, 1); else c.push(st.id);
-        await saveItemStickers(m, c); renderPick(m);
-      };
-      list.appendChild(b);
-    });
-  }
-  function openStickerPick() { const m = byId.get(vId); if (!m) return; renderPick(m); $('#stPickDlg').showModal(); }
-  $('#vstk').onclick = openStickerPick;
-  $('#stPickNone').onclick = async () => { const m = byId.get(vId); if (!m) return; await saveItemStickers(m, []); renderPick(m); };
-  $('#stPickClose').onclick = () => $('#stPickDlg').close();
-  $('#stPickDlg').addEventListener('close', () => { freeThumbs(); $('#stPickList').replaceChildren(); });
 
   /* ---------- helpers ---------- */
   let statusTimer;
@@ -732,7 +446,8 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     return a;
   }
   const folderOf = m => m.folder || UNFILED;
-  const itemsOf = fid => [...byId.values()].filter(m => folderOf(m) === fid);
+  const spaceFolders = () => [...folders.values()].filter(f => !!f.cv === (space === 1));
+  const itemsOf = fid => [...byId.values()].filter(m => folderOf(m) === fid && !!m.cv === (space === 1));
   const loadImage = url => new Promise((res, rej) => {
     const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url;
   });
@@ -762,7 +477,8 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
       sel.innerHTML = '';
       const add = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; sel.appendChild(o); };
       add(UNFILED, 'ไม่ใส่แฟ้ม (หน้าแรก)');
-      [...folders.values()].sort((a, b) => a.created - b.created).forEach(f => add(f.id, f.name));
+      if (space === 2) add(COVER, 'หน้า 1 (หน้าบัง)');
+      spaceFolders().sort((a, b) => a.created - b.created).forEach(f => add(f.id, f.name));
       sel.value = String(current);
       let result = null;
       const done = v => { result = v; dlg.close(); };
@@ -860,7 +576,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   }
   function route() {
     const st = history.state;
-    const target = st && st.f !== undefined && folders.has(st.f) || (st && st.f === UNFILED) ? st.f : null;
+    const target = (st && st.f !== undefined && folders.has(st.f) && !!folders.get(st.f).cv === (space === 1)) || (st && st.f === UNFILED) ? st.f : null;
     if (target === curFolder) return;
     if (target === null) showHome(); else showFolder(target);
   }
@@ -896,11 +612,11 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   function renderHome() {
     coverUrls.forEach(u => URL.revokeObjectURL(u)); coverUrls = [];
     fgrid.innerHTML = '';
-    const list = [...folders.values()].sort((a, b) => a.created - b.created);
+    const list = spaceFolders().sort((a, b) => a.created - b.created);
     const frag = document.createDocumentFragment();
     list.forEach(f => frag.appendChild(makeCard(f, false)));
     fgrid.appendChild(frag);
-    $('#homeEmpty').hidden = folders.size > 0 || itemsOf(UNFILED).length > 0;
+    $('#homeEmpty').hidden = list.length > 0 || itemsOf(UNFILED).length > 0;
   }
   fgrid.addEventListener('click', e => {
     const el = e.target.closest('.fcard'); if (!el) return;
@@ -915,6 +631,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     const name = await askName('สร้างแฟ้มใหม่', '');
     if (name === null) return;
     const f = { name: name || 'แฟ้มใหม่', cover: null, created: Date.now() };
+    if (space === 1) f.cv = 1;
     try {
       f.id = await req(store('folders', 'readwrite').add(f));
       folders.set(f.id, f); renderHome();
@@ -929,7 +646,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     try { await putFolder(f); } catch (e) { setStatus('บันทึกไม่สำเร็จ'); return; }
     if (curFolder === null) renderHome(); else updateFolderHeader();
   }
-  function chooseCover(id) { coverTarget = id; closeMenus(); $('#coverIn').click(); }
+  function chooseCover(id) { coverTarget = id; closeMenus(); pickFile($('#coverIn')); }
   async function setCover(file) {
     const f = folders.get(coverTarget); if (!f || !file) return;
     try {
@@ -961,12 +678,13 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   }
 
   /* ---------- add / delete / move files ---------- */
-  async function addOne(file, caption, folder = UNFILED, tags = []) {
+  async function addOne(file, caption, folder = UNFILED, tags = [], cv = false) {
     const kind = file.type.startsWith('video/') ? 'video' : (file.type === 'image/gif' ? 'gif' : 'image');
     let t = { thumb: null, w: 0, h: 0 };
     try { t = kind === 'video' ? await videoThumb(file) : await imageThumb(file); } catch (e) {}
     const folderTag = folder !== UNFILED && folders.get(folder) ? [folders.get(folder).name] : [];
     const meta = { kind, mime: file.type, caption: caption || '', tags: normalizeTags([...(tags || []), ...folderTag]), w: t.w, h: t.h, thumb: t.thumb, tv: TV, added: Date.now(), folder };
+    if (cv) meta.cv = 1;
     const blob = new Blob([file], { type: file.type });
     const id = await new Promise((res, rej) => {
       const tx = db.transaction(['meta', 'files'], 'readwrite');
@@ -988,7 +706,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     const ids = []; let n = 0, fail = 0, full = false;
     for (const f of files) {
       setStatus(`กำลังเพิ่ม ${++n}/${files.length}`, 0);
-      try { ids.push(await addOne(f, '', folderId)); }
+      try { ids.push(await addOne(f, '', folderId, [], space === 1)); }
       catch (e) { fail++; if (e && e.name === 'QuotaExceededError') { full = true; break; } }
     }
     if (curFolder === null) {
@@ -1034,14 +752,15 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     if (to === null || to === folderOf(m)) return;
     const idx = order.indexOf(id);
     try {
-      m.folder = to;
-      if (to !== UNFILED && folders.get(to)) m.tags = normalizeTags([...(m.tags || []), folders.get(to).name]);
+      m.folder = to === COVER ? UNFILED : to;
+      if (to === COVER) m.cv = 1;
+      else if (to !== UNFILED && folders.get(to)) m.tags = normalizeTags([...(m.tags || []), folders.get(to).name]);
       await putMeta(m);
     } catch (e) { setStatus('ย้ายไม่สำเร็จ'); return; }
     removeTile(id);
     if (curFolder === null) renderHome();
     const f = folders.get(to);
-    setStatus('ย้ายไป ' + (to === UNFILED ? 'หน้าแรก (ไม่ใส่แฟ้ม)' : '"' + (f ? f.name : '') + '"') + ' แล้ว');
+    setStatus('ย้ายไป ' + (to === COVER ? 'หน้า 1' : to === UNFILED ? 'หน้าแรก (ไม่ใส่แฟ้ม)' : '"' + (f ? f.name : '') + '"') + ' แล้ว');
     afterRemoved(idx);
   }
 
@@ -1104,7 +823,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   function updateCount() {
     $('#fcount').textContent = order.length ? order.length + ' ไฟล์' : '';
     $('#empty').hidden = curFolder === null || order.length > 0;
-    $('#homeEmpty').hidden = folders.size > 0 || itemsOf(UNFILED).length > 0;
+    $('#homeEmpty').hidden = spaceFolders().length > 0 || itemsOf(UNFILED).length > 0;
   }
   function build() {
     clearGrid();
@@ -1322,7 +1041,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     else { el.alt = ''; el.draggable = false; }
     el.src = curUrl;
     vstage.appendChild(el);
-    resetZoom(false); applySticker(m);
+    resetZoom(false); 
     const i = order.indexOf(id);
     $('#prevV').hidden = i <= 0; $('#nextV').hidden = i < 0 || i >= order.length - 1;
   }
@@ -1349,7 +1068,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   function closeViewer(fromPop) {
     if (viewer.hidden) return;
     saveCaption();
-    vTok++; clearViewerMedia(); clearSticker(); resetZoom(false); viewer.hidden = true; vId = null;
+    vTok++; clearViewerMedia(); resetZoom(false); viewer.hidden = true; vId = null;
     if (pushed && !fromPop) { pushed = false; history.back(); } else pushed = false;
   }
   vstage.addEventListener('click', e => {
@@ -1374,21 +1093,19 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   async function buildBackup() {
     const ids = [...byId.keys()].sort((a, b) => a - b);
     const fl = [...folders.values()].sort((a, b) => a.id - b.id);
-    await ensurePosters();
-    if (!ids.length && !fl.length && !stickers.length) { setStatus('ยังไม่มีข้อมูลให้ส่งออก'); return null; }
+    if (!ids.length && !fl.length) { setStatus('ยังไม่มีข้อมูลให้ส่งออก'); return null; }
     const enc = new TextEncoder(), parts = [enc.encode('GALV3\n')];
     const push = (h, b) => {
       const hb = enc.encode(JSON.stringify(h));
       const len = new Uint8Array(4); new DataView(len.buffer).setUint32(0, hb.length);
       parts.push(len, hb); if (b) parts.push(b);
     };
-    for (const f of fl) push({ t: 'f', id: f.id, name: f.name, mime: f.cover ? f.cover.type : '', size: f.cover ? f.cover.size : 0 }, f.cover);
-    for (const st of stickers) { const fr = st.frames || [], bl = new Blob([st.blob, ...fr]); push({ t: 's', id: st.id, name: st.name || '', mime: st.type, crop: st.crop || FULL, w: st.w || 0, h: st.h || 0, vsize: st.blob.size, fsz: fr.map(f => f.size), fps: st.fps || 0, size: bl.size }, bl); }
+    for (const f of fl) push({ t: 'f', id: f.id, cv: f.cv ? 1 : 0, name: f.name, mime: f.cover ? f.cover.type : '', size: f.cover ? f.cover.size : 0 }, f.cover);
     let n = 0;
     for (const id of ids) {
       setStatus(`กำลังเตรียมไฟล์สำรอง ${++n}/${ids.length}`, 0);
       const m = byId.get(id), f = await getFile(id); if (!f) continue;
-      push({ t: 'i', folder: folderOf(m), mime: m.mime, caption: m.caption, tags: normalizeTags(m.tags || []), stickers: stIds(m), size: f.size }, f);
+      push({ t: 'i', folder: folderOf(m), mime: m.mime, caption: m.caption, tags: normalizeTags(m.tags || []), cv: m.cv ? 1 : 0, size: f.size }, f);
     }
     return new Blob(parts, { type: 'application/octet-stream' });
   }
@@ -1411,35 +1128,28 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
       if (!confirm('การนำเข้าจะเขียนทับข้อมูลเดิมทั้งหมดในแกลเลอรีนี้ (รูป วิดีโอ และแฟ้มที่มีอยู่จะถูกแทนที่ด้วยข้อมูลในไฟล์สำรอง)\nทำต่อไหม?')) { setStatus('ยกเลิกการนำเข้า'); return; }
       setStatus('กำลังล้างข้อมูลเดิม...', 0);
       await new Promise((res, rej) => {
-        const tx = db.transaction(['meta', 'files', 'folders', 'stickers'], 'readwrite');
-        tx.objectStore('meta').clear(); tx.objectStore('files').clear(); tx.objectStore('folders').clear(); tx.objectStore('stickers').clear();
+        const tx = db.transaction(['meta', 'files', 'folders'], 'readwrite');
+        tx.objectStore('meta').clear(); tx.objectStore('files').clear(); tx.objectStore('folders').clear();
         tx.oncomplete = res; tx.onerror = tx.onabort = () => rej(tx.error);
       });
-      byId.clear(); folders.clear(); stickers = []; curFolder = null;
-      let off = 6, n = 0, count = 0; const map = new Map(), smap = new Map();
+      byId.clear(); folders.clear(); curFolder = null;
+      let off = 6, n = 0, count = 0; const map = new Map();
       while (off < file.size) {
         const len = new DataView(await file.slice(off, off + 4).arrayBuffer()).getUint32(0); off += 4;
         const head = JSON.parse(await file.slice(off, off + len).text()); off += len;
         const blob = file.slice(off, off + head.size, head.mime); off += head.size;
         setStatus(`กำลังนำเข้า ${++n}`, 0);
         if (head.t === 'f') {
-          const f = { name: head.name || 'แฟ้ม', cover: head.size ? new Blob([blob], { type: head.mime }) : null, created: Date.now() + n };
+          const f = { ...(head.cv ? { cv: 1 } : {}), name: head.name || 'แฟ้ม', cover: head.size ? new Blob([blob], { type: head.mime }) : null, created: Date.now() + n };
           f.id = await req(store('folders', 'readwrite').add(f));
           folders.set(f.id, f); map.set(head.id, f.id);
-        } else if (head.t === 's') {
-          const st = { name: head.name || '', type: head.mime, blob: new Blob([blob.slice(0, head.vsize || head.size)], { type: head.mime }), crop: head.crop || { ...FULL }, w: head.w, h: head.h, created: Date.now() + n };
-          if (head.fsz && head.fsz.length) { let o = head.vsize; st.frames = head.fsz.map(z => { const fb = new Blob([blob.slice(o, o + z)], { type: 'image/webp' }); o += z; return fb; }); st.fps = head.fps || 12; st.poster = st.frames[0]; }
-          st.id = await req(store('stickers', 'readwrite').add(st));
-          stickers.push(st); smap.set(head.id, st.id);
         } else {
           const fid = head.t === 'i' && head.folder ? (map.get(head.folder) || UNFILED) : UNFILED;
-          const nid = await addOne(blob, head.caption, fid, head.tags || []); count++;
-          const sids = (head.stickers || (head.sticker ? [head.sticker] : [])).map(x => smap.get(x)).filter(Boolean);
-          if (sids.length) { const mm = byId.get(nid); mm.stickers = sids; await putMeta(mm); }
+          await addOne(blob, head.caption, fid, head.tags || [], !!head.cv); count++;
         }
       }
       showHome();
-      setStatus(`นำเข้าแล้ว ${map.size} แฟ้ม ${count} ไฟล์ ${stickers.length} สติกเกอร์`); ensurePosters();
+      setStatus(`นำเข้าแล้ว ${map.size} แฟ้ม ${count} ไฟล์`);
     } catch (e) { setStatus('ไฟล์สำรองไม่ถูกต้อง หรืออ่านไม่สำเร็จ'); }
   }
 
@@ -1463,12 +1173,12 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   const fileIn = $('#fileIn'), backupIn = $('#backupIn'), coverIn = $('#coverIn');
   $('#newFolder').onclick = createFolder;
   $('#back').onclick = leaveFolder;
-  $('#add').onclick = () => fileIn.click();
-  $('#addHome').onclick = () => fileIn.click();
+  $('#add').onclick = () => pickFile(fileIn);
+  $('#addHome').onclick = () => pickFile(fileIn);
   fileIn.onchange = () => { const t = curFolder === null ? UNFILED : curFolder; addFiles(fileIn.files, t).finally(() => { fileIn.value = ''; }); };
   $('#shuffle').onclick = () => { shuffle(order); build(); window.scrollTo(0, 0); };
   $('#export').onclick = () => { closeMenus(); exportAll(); };
-  $('#import').onclick = () => { closeMenus(); backupIn.click(); };
+  $('#import').onclick = () => { closeMenus(); pickFile(backupIn); };
   backupIn.onchange = () => { if (backupIn.files[0]) importBackup(backupIn.files[0]).finally(() => { backupIn.value = ''; }); };
   $('#mRename').onclick = () => { closeMenus(); renameFolder(curFolder); };
   $('#mCover').onclick = () => chooseCover(curFolder);
@@ -1522,14 +1232,87 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     if (todo.length) { setStatus('ปรับภาพตัวอย่างเสร็จแล้ว'); if (curFolder === null) renderHome(); }
   }
 
+
+  /* ---------- หน้า 1 (หน้าบัง) / หน้า 2 (แกลเลอรีจริง) ---------- */
+  let space = 1, holdUntil = 0;
+  const LKEY = 'velora-lock', OPEN = 'velora-open', HID = 'velora-hidden';
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  const lockCfg = () => { try { return JSON.parse(lsGet(LKEY, '{}')) || {}; } catch (e) { return {}; } };
+  const lockMode = () => lockCfg().mode || '5m';
+  const pickFile = el => { holdUntil = Date.now() + 120000; el.click(); };   // ตัวเลือกไฟล์อาจทำให้แอปดูเหมือนออกไป จึงไม่ล็อกทันที
+  async function sha(pin, salt) {
+    try { const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salt + ':' + pin)); return [...new Uint8Array(d)].map(b => b.toString(16).padStart(2, '0')).join(''); }
+    catch (e) { let h = 5381; for (const ch of salt + ':' + pin) h = ((h << 5) + h + ch.charCodeAt(0)) | 0; return 'x' + h; }
+  }
+  function applySpace() { document.body.classList.toggle('space1', space === 1); }
+  function setSpace(n) {
+    document.querySelectorAll('dialog[open]').forEach(d => d.close());
+    if (!viewer.hidden) closeViewer(true);
+    space = n; applySpace(); lsSet(OPEN, n === 2 ? '1' : '0');
+    curFolder = null; showHome();
+  }
+  function askPin() {
+    return new Promise(res => {
+      const dlg = $('#pinDlg'), inp = $('#pinIn'), msg = $('#pinMsg'); inp.value = ''; msg.textContent = ''; let ok = false;
+      const check = async () => {
+        const c = lockCfg();
+        if (await sha(inp.value, c.salt || '') === c.hash) { ok = true; dlg.close(); }
+        else { msg.textContent = 'รหัสไม่ถูกต้อง'; inp.value = ''; inp.focus(); }
+      };
+      $('#pinOk').onclick = check; $('#pinNo').onclick = () => dlg.close();
+      inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); check(); } };
+      dlg.onclose = () => res(ok); dlg.showModal(); inp.focus();
+    });
+  }
+  async function tryUnlock() {
+    if (space !== 1 || $('#pinDlg').open) return;
+    if (!lockCfg().hash || await askPin()) setSpace(2);
+  }
+  (() => {   // ตัวเปิดหน้า 2: แตะ VELORA 5 ครั้ง หรือกดค้าง 1 วินาที
+    const t = $('#hHome h1'); let taps = [], lp = null;
+    t.addEventListener('contextmenu', e => { if (space === 1) e.preventDefault(); });
+    t.addEventListener('pointerdown', () => { if (space !== 1) return; clearTimeout(lp); lp = setTimeout(() => { lp = null; taps = []; tryUnlock(); }, 1000); });
+    ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => t.addEventListener(ev, () => clearTimeout(lp)));
+    t.addEventListener('click', () => {
+      if (space !== 1) return;
+      const now = Date.now(); taps = taps.filter(x => now - x < 2500); taps.push(now);
+      if (taps.length >= 5) { taps = []; tryUnlock(); }
+    });
+  })();
+  document.querySelectorAll('.lockbtn').forEach(b => { b.onclick = () => { closeMenus(); setSpace(1); }; });
+  function initialSpace() {
+    if (lsGet(OPEN, '0') !== '1') return 1;
+    const m = lockMode(); if (m === 'now') return 1; if (m === 'never') return 2;
+    return Date.now() - (+lsGet(HID, '0') || 0) < 5 * 60e3 ? 2 : 1;
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { lsSet(HID, String(Date.now())); if (space === 2 && lockMode() === 'now' && Date.now() > holdUntil) setSpace(1); }
+    else if (space === 2 && lockMode() === '5m' && Date.now() - (+lsGet(HID, '0') || Date.now()) > 5 * 60e3) setSpace(1);
+  });
+  window.addEventListener('pagehide', () => lsSet(HID, String(Date.now())));
+
+  /* ตั้งค่าหน้าบัง (ในหน้า 2) */
+  function refreshLockDlg() { const c = lockCfg(); $('#lockMode').value = lockMode(); $('#pinState').textContent = c.hash ? 'ตั้งรหัสไว้แล้ว' : 'ยังไม่ได้ตั้งรหัส (แตะ/กดค้างแล้วเข้าหน้า 2 ได้เลย)'; $('#pinNew').value = ''; }
+  $('#coverSet').onclick = () => { closeMenus(); refreshLockDlg(); $('#lockDlg').showModal(); };
+  $('#lockClose').onclick = () => $('#lockDlg').close();
+  $('#lockMode').onchange = () => { const c = lockCfg(); c.mode = $('#lockMode').value; lsSet(LKEY, JSON.stringify(c)); setStatus('บันทึกแล้ว'); };
+  $('#pinSet').onclick = async () => {
+    const v = $('#pinNew').value.trim();
+    if (!/^\d{4,12}$/.test(v)) { setStatus('รหัสต้องเป็นตัวเลข 4–12 หลัก'); return; }
+    const c = lockCfg(); c.salt = Math.random().toString(36).slice(2) + Date.now().toString(36); c.hash = await sha(v, c.salt);
+    lsSet(LKEY, JSON.stringify(c)); refreshLockDlg(); setStatus('ตั้งรหัสแล้ว');
+  };
+  $('#pinClear').onclick = () => { const c = lockCfg(); delete c.hash; delete c.salt; lsSet(LKEY, JSON.stringify(c)); refreshLockDlg(); setStatus('ลบรหัสแล้ว'); };
+
   /* ---------- start ---------- */
   (async () => {
     try {
-      db = await openDB(); await loadStickers(); setTimeout(ensurePosters, 1500);
+      db = await openDB();
       try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
       (await req(store('meta').getAll())).forEach(m => byId.set(m.id, m));
       (await req(store('folders').getAll())).forEach(f => folders.set(f.id, f));
-      showHome();
+      space = initialSpace(); applySpace(); showHome();
       upgradeThumbs();
     } catch (e) {
       setStatus('เปิดที่เก็บข้อมูลในเบราว์เซอร์นี้ไม่ได้ (ลองเปิดไฟล์ด้วย Chrome หรือ Edge แบบไม่ใช่โหมดไม่ระบุตัวตน)', 0);
