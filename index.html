@@ -207,6 +207,29 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
 #vstage.zoomed img{cursor:grab}
 #vstage.panning img{cursor:grabbing}
 #vstage{touch-action:none; overflow:hidden}
+#tabs{display:flex; gap:8px; max-width:1700px; margin:4px auto 12px}
+#tabs button{background:transparent; color:var(--muted); border:1px solid color-mix(in srgb,var(--accent) 22%,transparent); border-radius:20px; padding:7px 16px}
+#tabs button.on{background:var(--panel2); color:var(--text); border-color:color-mix(in srgb,var(--accent) 55%,transparent)}
+#grid.books{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px 14px}
+#grid.books::after{display:none}
+#grid.books .tile{flex:none}
+@media (min-width:760px){#grid.books{grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px 20px}}
+.tile.book .thumb{aspect-ratio:3/4; border-radius:6px 6px 0 0; border-bottom:0}
+.tile.book .thumb img{object-position:top center}
+.ptitle{padding:9px 8px; text-align:center; font-weight:700; font-size:.92rem; background:#111; color:var(--text); border-radius:0 0 6px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+#reader{position:fixed; inset:0; z-index:22; background:#000; display:flex; flex-direction:column;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+#rbar{display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--bg); border-bottom:1px solid color-mix(in srgb,var(--accent) 14%,transparent)}
+#rbar>button{min-height:40px; min-width:40px; padding:0 12px; font-size:1.3rem}
+#rTitle{flex:1; min-width:0; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+#rPg{color:var(--muted); font-size:.9rem; white-space:nowrap}
+#pages{flex:1; min-height:0; overflow:auto; touch-action:pan-x pan-y; -webkit-overflow-scrolling:touch; background:#0a0a0a; position:relative}
+#pages.single{scroll-snap-type:y mandatory}
+#pcol{width:max-content; min-width:100%; display:flex; flex-direction:column; align-items:center; padding:8px 0}
+.pg{position:relative; flex:none; width:calc(var(--bw,360px) * var(--z,1)); aspect-ratio:var(--r,.75); background:#fff; margin-bottom:8px}
+.pg canvas{width:100%; height:100%; display:block}
+#pages.single .pg{width:auto; height:min(calc(var(--ph,600px) * var(--z,1)), calc(var(--bw,360px) * var(--z,1) / var(--r,.75))); scroll-snap-align:center}
+#rBusy{position:absolute; left:0; right:0; top:70px; text-align:center; color:var(--muted); pointer-events:none}
 .tag-strip{display:flex; align-items:flex-start; gap:6px; margin-top:8px}
 .tag-strip #vTags{flex:1; padding:0; min-height:32px; align-content:center}
 .tag-plus{min-height:32px; min-width:32px; padding:0 10px; border-radius:16px; background:var(--panel); color:var(--accent); border:1px solid color-mix(in srgb,var(--accent) 30%,var(--panel2))}
@@ -273,6 +296,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     </div>
   </section>
 
+  <nav id="tabs" hidden><button id="tabP" type="button" class="on">รูป / วิดีโอ</button><button id="tabB" type="button">หนังสือ (PDF)</button></nav>
   <div id="grid"></div>
   <div id="sentinel" style="height:1px"></div>
   <div id="empty" class="empty" hidden>
@@ -280,6 +304,19 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     กด "เพิ่มไฟล์" เพื่อเลือกรูป GIF หรือวิดีโอ บนคอมลากไฟล์มาวางในหน้านี้ได้เลย
   </div>
 </main>
+
+<div id="reader" hidden>
+  <div id="rbar">
+    <button id="rBack" type="button" aria-label="กลับ">‹</button>
+    <div id="rTitle"></div><span id="rPg"></span>
+    <details class="more" id="rMore"><summary>⋯</summary><div class="menu">
+      <button id="rMode" type="button">อ่านทีละหน้า</button>
+      <button id="rMove" type="button">ย้าย</button>
+      <button id="rDel" type="button" class="danger">ลบ</button>
+    </div></details>
+  </div>
+  <div id="pages"><div id="pcol"></div><div id="rBusy" hidden>กำลังเปิด...</div></div>
+</div>
 
 <div id="viewer" hidden>
   <button id="closeV" type="button" aria-label="ปิด">✕</button>
@@ -357,7 +394,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   </div>
 </dialog>
 
-<input id="fileIn" type="file" accept="image/*,video/*" multiple hidden>
+<input id="fileIn" type="file" accept="image/*,video/*,application/pdf,.pdf" multiple hidden>
 <input id="coverIn" type="file" accept="image/*" hidden>
 <input id="backupIn" type="file" accept=".galv" hidden>
 
@@ -447,6 +484,20 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     return a;
   }
   const folderOf = m => m.folder || UNFILED;
+  let tab = 'p', keepTab = false;
+  const isBook = m => m.kind === 'pdf';
+  const hasBooks = () => [...byId.values()].some(m => isBook(m) && !!m.cv === (space === 1));
+  const viewItems = fid => itemsOf(fid).filter(m => isBook(m) === (tab === 'b'));
+  const arrange = ids => tab === 'b' ? ids.sort((a, b) => byId.get(b).added - byId.get(a).added) : shuffle(ids);
+  function syncTabs() {
+    const has = hasBooks(); if (!has) tab = 'p';
+    $('#tabs').hidden = !has; $('#tabP').classList.toggle('on', tab === 'p'); $('#tabB').classList.toggle('on', tab === 'b');
+    grid.classList.toggle('books', tab === 'b');
+  }
+  function chooseTab(fid) {
+    if (keepTab) { keepTab = false; return; }
+    if (!viewItems(fid).length && itemsOf(fid).length) tab = tab === 'b' ? 'p' : 'b';
+  }
   const spaceFolders = () => [...folders.values()].filter(f => !!f.cv === (space === 1));
   const itemsOf = fid => [...byId.values()].filter(m => folderOf(m) === fid && !!m.cv === (space === 1));
   const loadImage = url => new Promise((res, rej) => {
@@ -554,12 +605,14 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   }
   function showHome() {
     curFolder = null; clearGrid(); showView(); renderHome();
-    order = shuffle(itemsOf(UNFILED).map(m => m.id));   // files not in any folder show right on the home page
+    chooseTab(UNFILED); syncTabs();
+    order = arrange(viewItems(UNFILED).map(m => m.id));   // files not in any folder show right on the home page
     build(); window.scrollTo(0, 0);
   }
   function showFolder(id) {
     curFolder = id; showView(); updateFolderHeader();
-    order = shuffle(itemsOf(id).map(m => m.id));
+    chooseTab(id); syncTabs();
+    order = arrange(viewItems(id).map(m => m.id));
     build(); window.scrollTo(0, 0);
   }
   function updateFolderHeader() {
@@ -582,6 +635,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     if (target === null) showHome(); else showFolder(target);
   }
   window.addEventListener('popstate', () => {
+    if (!reader.hidden) { closeReader(true); return; }
     if (!viewer.hidden) { closeViewer(true); return; }
     route();
   });
@@ -679,14 +733,17 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   }
 
   /* ---------- add / delete / move files ---------- */
-  async function addOne(file, caption, folder = UNFILED, tags = [], cv = false) {
-    const kind = file.type.startsWith('video/') ? 'video' : (file.type === 'image/gif' ? 'gif' : 'image');
+  async function addOne(file, caption, folder = UNFILED, tags = [], cv = false, extra = {}) {
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+    const mime = isPdf ? 'application/pdf' : file.type;
+    const kind = isPdf ? 'pdf' : file.type.startsWith('video/') ? 'video' : (file.type === 'image/gif' ? 'gif' : 'image');
     let t = { thumb: null, w: 0, h: 0 };
-    try { t = kind === 'video' ? await videoThumb(file) : await imageThumb(file); } catch (e) {}
+    try { t = kind === 'pdf' ? await pdfCover(file) : kind === 'video' ? await videoThumb(file) : await imageThumb(file); } catch (e) { if (isPdf) throw e; }
     const folderTag = folder !== UNFILED && folders.get(folder) ? [folders.get(folder).name] : [];
-    const meta = { kind, mime: file.type, caption: caption || '', tags: normalizeTags([...(tags || []), ...folderTag]), w: t.w, h: t.h, thumb: t.thumb, tv: TV, added: Date.now(), folder };
+    const meta = { kind, mime, caption: caption || '', tags: normalizeTags([...(tags || []), ...folderTag]), w: t.w, h: t.h, thumb: t.thumb, tv: TV, added: Date.now(), folder };
     if (cv) meta.cv = 1;
-    const blob = new Blob([file], { type: file.type });
+    if (isPdf) { meta.name = String(extra.name || file.name || 'PDF').replace(/\.pdf$/i, '').slice(0, 200); meta.np = t.np || 0; if (extra.lp) meta.lp = extra.lp; }
+    const blob = new Blob([file], { type: mime });
     const id = await new Promise((res, rej) => {
       const tx = db.transaction(['meta', 'files'], 'readwrite');
       let newId;
@@ -702,19 +759,24 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     return id;
   }
   async function addFiles(list, folderId) {
-    const files = [...list].filter(f => /^(image|video)\//.test(f.type));
-    if (!files.length) { setStatus('ไม่รองรับไฟล์ที่เลือก (ใช้ได้เฉพาะรูป GIF และวิดีโอ)'); return; }
+    const files = [...list].filter(f => /^(image|video)\//.test(f.type) || f.type === 'application/pdf' || /\.pdf$/i.test(f.name || ''));
+    if (!files.length) { setStatus('ไม่รองรับไฟล์ที่เลือก (ใช้ได้เฉพาะรูป GIF วิดีโอ และ PDF)'); return; }
     const ids = []; let n = 0, fail = 0, full = false;
     for (const f of files) {
       setStatus(`กำลังเพิ่ม ${++n}/${files.length}`, 0);
       try { ids.push(await addOne(f, '', folderId, [], space === 1)); }
       catch (e) { fail++; if (e && e.name === 'QuotaExceededError') { full = true; break; } }
     }
-    if (curFolder === null) {
-      if (folderId === UNFILED) { order = [...shuffle(ids), ...order]; build(); }
+    const kinds = new Set(ids.map(id => byId.get(id).kind === 'pdf' ? 'b' : 'p'));
+    const prevTab = tab; if (kinds.size === 1 && (curFolder === null ? folderId === UNFILED : curFolder === folderId)) tab = [...kinds][0];
+    syncTabs();
+    const shown = (curFolder === null ? folderId === UNFILED : curFolder === folderId);
+    if (tab !== prevTab && shown) { keepTab = true; if (curFolder === null) showHome(); else showFolder(curFolder); }
+    else if (curFolder === null) {
+      if (folderId === UNFILED) { order = [...arrange(ids.filter(id => (byId.get(id).kind === 'pdf') === (tab === 'b'))), ...order]; build(); }
       renderHome(); window.scrollTo(0, 0);
     } else if (curFolder === folderId) {
-      order = [...shuffle(ids), ...order]; build(); window.scrollTo(0, 0);
+      order = [...arrange(ids.filter(id => (byId.get(id).kind === 'pdf') === (tab === 'b'))), ...order]; build(); window.scrollTo(0, 0);
     }
     setStatus(full ? 'พื้นที่เก็บข้อมูลเต็ม เพิ่มไฟล์ไม่ครบ'
       : fail ? `เพิ่มแล้ว ${ids.length} ไฟล์ ไม่สำเร็จ ${fail} ไฟล์`
@@ -797,7 +859,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     const media = (m.kind === 'video' && !m.thumb)
       ? '<video muted playsinline preload="metadata" tabindex="-1"></video>'
       : '<img alt="" decoding="async" draggable="false">';
-    const play = m.kind === 'image' ? '' : '<span class="play">▶</span>';
+    const play = (m.kind === 'image' || m.kind === 'pdf') ? '' : '<span class="play">▶</span>';
     el.innerHTML =
       '<button class="thumb" type="button" aria-label="เปิดดู">' + media + '<span class="badge"></span>' + play + '<span class="cmark" hidden>✎</span></button>';
     // clamp very wide / very tall pictures so one picture can't take over a whole row (they get cropped a little in the grid)
@@ -806,6 +868,10 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     el.querySelector('.thumb').style.setProperty('--ar', ar.toFixed(3));
     el.querySelector('.badge').textContent = m.kind === 'gif' ? 'GIF' : '';
     el.querySelector('.cmark').hidden = !(m.caption && m.caption.trim());
+    if (m.kind === 'pdf') {
+      el.classList.add('book'); el.querySelector('.thumb').style.setProperty('--ar', '0.75');
+      const t = document.createElement('div'); t.className = 'ptitle'; t.textContent = m.name || 'PDF'; el.appendChild(t);
+    }
     return el;
   }
   function renderMore() {
@@ -901,7 +967,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   $('#vdel').onclick = deleteItem;
   grid.addEventListener('click', e => {
     const el = e.target.closest('.tile'); if (!el) return;
-    if (e.target.closest('.thumb')) openViewer(+el.dataset.id);
+    if (e.target.closest('.thumb')) { const m = byId.get(+el.dataset.id); if (m && m.kind === 'pdf') openReader(m.id); else openViewer(+el.dataset.id); }
   });
   document.addEventListener('visibilitychange', () => { if (document.hidden) saveCaption(); });
   window.addEventListener('pagehide', saveCaption);
@@ -1106,7 +1172,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     for (const id of ids) {
       setStatus(`กำลังเตรียมไฟล์สำรอง ${++n}/${ids.length}`, 0);
       const m = byId.get(id), f = await getFile(id); if (!f) continue;
-      push({ t: 'i', folder: folderOf(m), mime: m.mime, caption: m.caption, tags: normalizeTags(m.tags || []), cv: m.cv ? 1 : 0, size: f.size }, f);
+      push({ t: 'i', folder: folderOf(m), mime: m.mime, caption: m.caption, tags: normalizeTags(m.tags || []), cv: m.cv ? 1 : 0, name: m.name || '', lp: m.lp || 0, size: f.size }, f);
     }
     return new Blob(parts, { type: 'application/octet-stream' });
   }
@@ -1146,7 +1212,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
           folders.set(f.id, f); map.set(head.id, f.id);
         } else {
           const fid = head.t === 'i' && head.folder ? (map.get(head.folder) || UNFILED) : UNFILED;
-          await addOne(blob, head.caption, fid, head.tags || [], !!head.cv); count++;
+          await addOne(blob, head.caption, fid, head.tags || [], !!head.cv, { name: head.name, lp: head.lp }); count++;
         }
       }
       showHome();
@@ -1210,9 +1276,205 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     } else addFiles(e.dataTransfer.files, curFolder);
   });
 
+
+  /* ---------- PDF: ปก = หน้าแรก, โหมดอ่าน (pdf.js อยู่ในโฟลเดอร์ lib/) ---------- */
+  let pdfLibP = null;
+  function loadPdfLib() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    return pdfLibP || (pdfLibP = new Promise((res, rej) => {
+      const sc = document.createElement('script'); sc.src = 'lib/pdf.js';
+      sc.onload = () => { try { window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.js'; res(window.pdfjsLib); } catch (e) { rej(e); } };
+      sc.onerror = () => { pdfLibP = null; rej(new Error('pdfjs')); };
+      document.head.appendChild(sc);
+    }));
+  }
+  async function openPdfDoc(file) {
+    const lib = await loadPdfLib();
+    const task = lib.getDocument({ data: await file.arrayBuffer() });
+    task.onPassword = (cb, reason) => {
+      const p = prompt(reason === 2 ? 'รหัสผ่านไม่ถูกต้อง ลองอีกครั้ง' : 'PDF นี้ตั้งรหัสผ่านไว้ ใส่รหัสผ่าน');
+      if (p) cb(p); else task.destroy();
+    };
+    return task.promise;
+  }
+  async function pdfCover(file) {
+    const doc = await openPdfDoc(file);
+    try {
+      const page = await doc.getPage(1), v1 = page.getViewport({ scale: 1 });
+      const vp = page.getViewport({ scale: Math.min(2, 720 / v1.width) });
+      const c = document.createElement('canvas'); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+      await page.render({ canvasContext: g, viewport: vp }).promise;
+      return { thumb: await canvasBlob(c), w: Math.round(v1.width), h: Math.round(v1.height), np: doc.numPages };
+    } finally { doc.destroy(); }
+  }
+
+  const reader = $('#reader'), pagesEl = $('#pages'), pcol = $('#pcol');
+  let rDoc = null, rId = null, rZ = 1, rSingle = false, rIO = null, rTok = 0, rPushed = false, rSaveT = 0, rCur = 1, rReT = 0, rTouched = false;
+  const rendering = new Map();
+  const setBw = () => {
+    pagesEl.style.setProperty('--bw', Math.min(pagesEl.clientWidth, 860) + 'px');
+    pagesEl.style.setProperty('--ph', Math.max(120, pagesEl.clientHeight - 16) + 'px');
+  };
+  async function renderPg(el) {
+    const n = +el.dataset.n, z = rZ, old = rendering.get(n);
+    if (old && old.z === z) return;
+    if (old && old.task) { try { old.task.cancel(); } catch (e) {} }
+    const doc = rDoc, rec = { z, task: null }; rendering.set(n, rec);
+    try {
+      const page = await doc.getPage(n); if (rec !== rendering.get(n)) return;
+      const v1 = page.getViewport({ scale: 1 }), cssW = el.clientWidth || 300, dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+      const sc = Math.min(cssW * dpr / v1.width, Math.sqrt(9e6 / (v1.width * v1.height)));
+      const vp = page.getViewport({ scale: sc });
+      const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(vp.width)); c.height = Math.max(1, Math.round(vp.height));
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+      rec.task = page.render({ canvasContext: g, viewport: vp }); await rec.task.promise;
+      if (rec !== rendering.get(n)) return;
+      el.replaceChildren(c);
+    } catch (e) { if (rendering.get(n) === rec) rendering.delete(n); }
+  }
+  function unrenderPg(el) {
+    const n = +el.dataset.n, cur = rendering.get(n);
+    if (cur) { try { cur.task && cur.task.cancel(); } catch (e) {} rendering.delete(n); }
+    el.replaceChildren();
+  }
+  function currentPage() {
+    const kids = pcol.children, r = pagesEl.getBoundingClientRect(), midY = r.top + r.height / 3;
+    let lo = 0, hi = kids.length - 1, ans = 0;
+    while (lo <= hi) { const mid = (lo + hi) >> 1; if (kids[mid].getBoundingClientRect().top <= midY) { ans = mid; lo = mid + 1; } else hi = mid - 1; }
+    return ans + 1;
+  }
+  let rRaf = 0;
+  pagesEl.addEventListener('scroll', () => {
+    if (rRaf) return;
+    rRaf = requestAnimationFrame(() => {
+      rRaf = 0; if (!rDoc) return;
+      const c = currentPage(); if (c === rCur) return; rCur = c;
+      $('#rPg').textContent = c + ' / ' + rDoc.numPages;
+      clearTimeout(rSaveT);
+      rSaveT = setTimeout(() => { const m = byId.get(rId); if (m && m.lp !== c) { m.lp = c; putMeta(m).catch(() => {}); } }, 800);
+    });
+  });
+  function schedRerender() {
+    clearTimeout(rReT);
+    rReT = setTimeout(() => { pcol.querySelectorAll('.pg').forEach(el => { if (el.firstChild) renderPg(el); }); }, 300);
+  }
+  function setZoom(z1, mx, my) {
+    z1 = Math.max(1, Math.min(4, z1)); const z0 = rZ; if (Math.abs(z1 - z0) < 0.001) return;
+    const r = pagesEl.getBoundingClientRect(), px = mx - r.left, py = my - r.top, k = z1 / z0;
+    const sl = (pagesEl.scrollLeft + px) * k - px, st = (pagesEl.scrollTop + py) * k - py;
+    rZ = z1; pagesEl.style.setProperty('--z', z1); pagesEl.scrollLeft = sl; pagesEl.scrollTop = st; schedRerender();
+  }
+  const rCenter = () => { const r = pagesEl.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
+  // pinch (touch) / ctrl+wheel / double tap / double click
+  let pin = null, tapT = 0, tapX = 0, tapY = 0;
+  const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  pagesEl.addEventListener('touchstart', e => {
+    rTouched = true;
+    if (e.touches.length === 2) pin = { d: dist(e.touches), z: rZ }; else pin = null;
+  }, { passive: true });
+  pagesEl.addEventListener('touchmove', e => {
+    if (e.touches.length === 2 && pin) {
+      if (e.cancelable) e.preventDefault();
+      const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2, my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      setZoom(pin.z * dist(e.touches) / pin.d, mx, my);
+    }
+  }, { passive: false });
+  pagesEl.addEventListener('touchend', e => {
+    if (e.touches.length) return;
+    if (pin) { pin = null; return; }
+    const t = e.changedTouches[0], now = Date.now();
+    if (now - tapT < 300 && Math.hypot(t.clientX - tapX, t.clientY - tapY) < 30) { setZoom(rZ > 1.05 ? 1 : 2.2, t.clientX, t.clientY); tapT = 0; }
+    else { tapT = now; tapX = t.clientX; tapY = t.clientY; }
+  }, { passive: true });
+  pagesEl.addEventListener('wheel', e => {
+    if (!e.ctrlKey) return; e.preventDefault();
+    setZoom(rZ * Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY);
+  }, { passive: false });
+  pagesEl.addEventListener('dblclick', e => { if (e.pointerType === 'touch') return; setZoom(rZ > 1.05 ? 1 : 2.2, e.clientX, e.clientY); });
+  window.addEventListener('resize', () => { if (!reader.hidden) { setBw(); schedRerender(); } });
+  document.addEventListener('keydown', e => {
+    if (reader.hidden) return;
+    if (e.key === 'Escape') { closeReader(); return; }
+    const [cx, cy] = rCenter();
+    if (e.key === '+' || e.key === '=') setZoom(rZ * 1.25, cx, cy); else if (e.key === '-' || e.key === '_') setZoom(rZ / 1.25, cx, cy); else if (e.key === '0') setZoom(1, cx, cy);
+  });
+
+  async function openReader(id) {
+    const m = byId.get(id); if (!m || rId !== null) return;
+    const tok = ++rTok; rId = id; rCur = 1; rTouched = false; rZ = 1; rSingle = false;
+    pagesEl.classList.remove('single'); $('#rMode').textContent = 'อ่านทีละหน้า'; pagesEl.style.setProperty('--z', 1);
+    $('#rTitle').textContent = m.name || 'PDF'; $('#rPg').textContent = ''; pcol.innerHTML = '';
+    const busy = $('#rBusy'); busy.hidden = false; busy.textContent = 'กำลังเปิด...';
+    reader.hidden = false; setBw();
+    try { history.pushState({ r: 1, f: curFolder }, ''); rPushed = true; } catch (e) { rPushed = false; }
+    try {
+      const f = await getFile(id); if (!f) throw new Error('nofile');
+      const doc = await openPdfDoc(f); if (tok !== rTok) { doc.destroy(); return; }
+      rDoc = doc; const n = doc.numPages;
+      const p1 = await doc.getPage(1), v = p1.getViewport({ scale: 1 }), r1 = (v.width / v.height).toFixed(4);
+      const frag = document.createDocumentFragment();
+      for (let i = 1; i <= n; i++) { const d = document.createElement('div'); d.className = 'pg'; d.dataset.n = i; d.style.setProperty('--r', r1); frag.appendChild(d); }
+      pcol.appendChild(frag);
+      rIO = new IntersectionObserver(es => es.forEach(en => en.isIntersecting ? renderPg(en.target) : unrenderPg(en.target)), { root: pagesEl, rootMargin: '1500px 0px' });
+      pcol.querySelectorAll('.pg').forEach(d => rIO.observe(d));
+      busy.hidden = true; $('#rPg').textContent = '1 / ' + n;
+      const lp = Math.min(n, Math.max(1, m.lp || 1));
+      const goLast = () => { if (lp > 1 && !rTouched) pcol.children[lp - 1].scrollIntoView({ block: 'start' }); };
+      goLast();
+      // read every page's real shape (some PDFs mix sizes), then return to the last page read
+      for (let i = 2; i <= n && tok === rTok; i++) {
+        const pg = await doc.getPage(i), vv = pg.getViewport({ scale: 1 }), r = (vv.width / vv.height).toFixed(4);
+        if (r !== r1) pcol.children[i - 1].style.setProperty('--r', r);
+        if (i % 25 === 0) await new Promise(rs => setTimeout(rs, 0));
+      }
+      if (tok === rTok) goLast();
+    } catch (e) { if (tok === rTok) { busy.hidden = false; busy.textContent = 'เปิด PDF ไม่สำเร็จ'; } }
+  }
+  function closeReader(fromPop) {
+    if (reader.hidden) return;
+    clearTimeout(rSaveT); clearTimeout(rReT);
+    const m = byId.get(rId); if (m && rDoc && m.lp !== rCur) { m.lp = rCur; putMeta(m).catch(() => {}); }
+    rTok++; rendering.forEach(r => { try { r.task && r.task.cancel(); } catch (e) {} }); rendering.clear();
+    if (rIO) { rIO.disconnect(); rIO = null; }
+    if (rDoc) { try { rDoc.destroy(); } catch (e) {} rDoc = null; }
+    pcol.innerHTML = ''; reader.hidden = true; rId = null; pin = null;
+    if (rPushed && !fromPop) { rPushed = false; history.back(); } else rPushed = false;
+  }
+  $('#rBack').onclick = () => closeReader();
+  $('#rMode').onclick = () => {
+    closeMenus(); rSingle = !rSingle; const cur = rCur;
+    pagesEl.classList.toggle('single', rSingle); $('#rMode').textContent = rSingle ? 'อ่านแบบเลื่อนต่อเนื่อง' : 'อ่านทีละหน้า';
+    setBw(); if (pcol.children[cur - 1]) pcol.children[cur - 1].scrollIntoView({ block: rSingle ? 'center' : 'start' }); schedRerender();
+  };
+  $('#rDel').onclick = async () => {
+    closeMenus(); const id = rId; if (id === null || !confirm('ลบเล่มนี้ออกจากแกลเลอรี?')) return;
+    try {
+      await new Promise((res, rej) => { const tx = db.transaction(['meta', 'files'], 'readwrite'); tx.objectStore('meta').delete(id); tx.objectStore('files').delete(id); tx.oncomplete = res; tx.onerror = tx.onabort = () => rej(tx.error); });
+    } catch (e) { setStatus('ลบไม่สำเร็จ'); return; }
+    byId.delete(id); closeReader(); keepTab = false;
+    if (curFolder === null) showHome(); else showFolder(curFolder);
+    setStatus('ลบแล้ว');
+  };
+  $('#rMove').onclick = async () => {
+    closeMenus(); const id = rId, m = byId.get(id); if (!m) return;
+    const to = await pickFolder(folderOf(m)); if (to === null || to === folderOf(m)) return;
+    try {
+      m.folder = to === COVER ? UNFILED : to;
+      if (to === COVER) m.cv = 1; else if (to !== UNFILED && folders.get(to)) m.tags = normalizeTags([...(m.tags || []), folders.get(to).name]);
+      await putMeta(m);
+    } catch (e) { setStatus('ย้ายไม่สำเร็จ'); return; }
+    closeReader(); if (curFolder === null) showHome(); else showFolder(curFolder);
+    const f = folders.get(to);
+    setStatus('ย้ายไป ' + (to === COVER ? 'หน้า 1' : to === UNFILED ? 'หน้าแรก (ไม่ใส่แฟ้ม)' : '"' + (f ? f.name : '') + '"') + ' แล้ว');
+  };
+  function gotoTab(t) { tab = t; keepTab = true; if (curFolder === null) showHome(); else showFolder(curFolder); }
+  $('#tabP').onclick = () => gotoTab('p');
+  $('#tabB').onclick = () => gotoTab('b');
+
   /* ---------- re-make older thumbnails ---------- */
   async function upgradeThumbs() {
-    const todo = [...byId.values()].filter(m => m.tv !== TV);
+    const todo = [...byId.values()].filter(m => m.tv !== TV && m.kind !== 'pdf');
     let n = 0;
     for (const m of todo) {
       setStatus(`กำลังปรับภาพตัวอย่าง ${++n}/${todo.length}`, 0);
@@ -1249,6 +1511,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   function applySpace() { document.body.classList.toggle('space1', space === 1); }
   function setSpace(n) {
     document.querySelectorAll('dialog[open]').forEach(d => d.close());
+    if (!reader.hidden) closeReader(true);
     if (!viewer.hidden) closeViewer(true);
     space = n; applySpace(); lsSet(OPEN, n === 2 ? '1' : '0');
     curFolder = null; showHome();
