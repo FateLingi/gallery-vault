@@ -1,4 +1,4 @@
-const CACHE = "velora-pwa-v13";
+const CACHE = "velora-pwa-v14";
 const LIB = "velora-lib-v1";   // pdf.js (cache-first, kept across app updates)
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 const LIBS = ["./lib/pdf.js", "./lib/pdf.worker.js"];

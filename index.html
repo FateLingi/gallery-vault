@@ -761,11 +761,11 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   async function addFiles(list, folderId) {
     const files = [...list].filter(f => /^(image|video)\//.test(f.type) || f.type === 'application/pdf' || /\.pdf$/i.test(f.name || ''));
     if (!files.length) { setStatus('ไม่รองรับไฟล์ที่เลือก (ใช้ได้เฉพาะรูป GIF วิดีโอ และ PDF)'); return; }
-    const ids = []; let n = 0, fail = 0, full = false;
+    const ids = []; let n = 0, fail = 0, full = false, libBad = false;
     for (const f of files) {
       setStatus(`กำลังเพิ่ม ${++n}/${files.length}`, 0);
       try { ids.push(await addOne(f, '', folderId, [], space === 1)); }
-      catch (e) { fail++; if (e && e.name === 'QuotaExceededError') { full = true; break; } }
+      catch (e) { fail++; if (e && (e.message === 'worker' || e.message === 'pdfjs')) libBad = true; if (e && e.name === 'QuotaExceededError') { full = true; break; } }
     }
     const kinds = new Set(ids.map(id => byId.get(id).kind === 'pdf' ? 'b' : 'p'));
     const prevTab = tab; if (kinds.size === 1 && (curFolder === null ? folderId === UNFILED : curFolder === folderId)) tab = [...kinds][0];
@@ -779,6 +779,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
       order = [...arrange(ids.filter(id => (byId.get(id).kind === 'pdf') === (tab === 'b'))), ...order]; build(); window.scrollTo(0, 0);
     }
     setStatus(full ? 'พื้นที่เก็บข้อมูลเต็ม เพิ่มไฟล์ไม่ครบ'
+      : libBad ? 'เปิด PDF ไม่ได้: ไฟล์ในโฟลเดอร์ lib ไม่ครบ (ต้องมี pdf.js และ pdf.worker.js ขนาดเต็ม)'
       : fail ? `เพิ่มแล้ว ${ids.length} ไฟล์ ไม่สำเร็จ ${fail} ไฟล์`
       : `เพิ่มแล้ว ${ids.length} ไฟล์`);
   }
@@ -1283,7 +1284,12 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
     return pdfLibP || (pdfLibP = new Promise((res, rej) => {
       const sc = document.createElement('script'); sc.src = 'lib/pdf.js';
-      sc.onload = () => { try { window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.js'; res(window.pdfjsLib); } catch (e) { rej(e); } };
+      sc.onload = () => {
+        fetch('lib/pdf.worker.js', { cache: 'no-store' }).then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error('worker'))).then(buf => {
+          if (buf.byteLength < 100000) throw new Error('worker');
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'lib/pdf.worker.js'; res(window.pdfjsLib);
+        }).catch(e => { pdfLibP = null; rej(e); });
+      };
       sc.onerror = () => { pdfLibP = null; rej(new Error('pdfjs')); };
       document.head.appendChild(sc);
     }));
@@ -1295,7 +1301,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
       const p = prompt(reason === 2 ? 'รหัสผ่านไม่ถูกต้อง ลองอีกครั้ง' : 'PDF นี้ตั้งรหัสผ่านไว้ ใส่รหัสผ่าน');
       if (p) cb(p); else task.destroy();
     };
-    return task.promise;
+    return Promise.race([task.promise, new Promise((_, rej) => setTimeout(() => { try { task.destroy(); } catch (e) {} rej(new Error('timeout')); }, 90000))]);
   }
   async function pdfCover(file) {
     const doc = await openPdfDoc(file);
