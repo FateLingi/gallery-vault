@@ -214,7 +214,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
 #grid.books::after{display:none}
 #grid.books .tile{flex:none}
 @media (min-width:760px){#grid.books{grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px 20px}}
-.tile.book .thumb{aspect-ratio:3/4; border-radius:6px 6px 0 0; border-bottom:0}
+.tile.book .thumb{aspect-ratio:3/4}
 .tile.book .thumb img{object-position:top center}
 .ptitle{padding:9px 8px; text-align:center; font-weight:700; font-size:.92rem; background:#111; color:var(--text); border-radius:0 0 6px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
 #reader{position:fixed; inset:0; z-index:22; background:#000; display:flex; flex-direction:column;
@@ -487,16 +487,14 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   let tab = 'p', keepTab = false;
   const isBook = m => m.kind === 'pdf';
   const hasBooks = () => [...byId.values()].some(m => isBook(m) && !!m.cv === (space === 1));
-  const viewItems = fid => itemsOf(fid).filter(m => isBook(m) === (tab === 'b'));
-  const arrange = ids => tab === 'b' ? ids.sort((a, b) => byId.get(b).added - byId.get(a).added) : shuffle(ids);
+  const viewItems = fid => itemsOf(fid);
+  const arrange = ids => shuffle(ids);
   function syncTabs() {
-    const has = hasBooks(); if (!has) tab = 'p';
-    $('#tabs').hidden = !has; $('#tabP').classList.toggle('on', tab === 'p'); $('#tabB').classList.toggle('on', tab === 'b');
-    grid.classList.toggle('books', tab === 'b');
+    tab = 'p'; $('#tabs').hidden = true; grid.classList.remove('books');
   }
   function chooseTab(fid) {
     if (keepTab) { keepTab = false; return; }
-    if (!viewItems(fid).length && itemsOf(fid).length) tab = tab === 'b' ? 'p' : 'b';
+    
   }
   const spaceFolders = () => [...folders.values()].filter(f => !!f.cv === (space === 1));
   const itemsOf = fid => [...byId.values()].filter(m => folderOf(m) === fid && !!m.cv === (space === 1));
@@ -768,15 +766,15 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
       catch (e) { fail++; if (e && (e.message === 'worker' || e.message === 'pdfjs')) libBad = true; if (e && e.name === 'QuotaExceededError') { full = true; break; } }
     }
     const kinds = new Set(ids.map(id => byId.get(id).kind === 'pdf' ? 'b' : 'p'));
-    const prevTab = tab; if (kinds.size === 1 && (curFolder === null ? folderId === UNFILED : curFolder === folderId)) tab = [...kinds][0];
+    const prevTab = tab;
     syncTabs();
     const shown = (curFolder === null ? folderId === UNFILED : curFolder === folderId);
     if (tab !== prevTab && shown) { keepTab = true; if (curFolder === null) showHome(); else showFolder(curFolder); }
     else if (curFolder === null) {
-      if (folderId === UNFILED) { order = [...arrange(ids.filter(id => (byId.get(id).kind === 'pdf') === (tab === 'b'))), ...order]; build(); }
+      if (folderId === UNFILED) { order = [...arrange(ids), ...order]; build(); }
       renderHome(); window.scrollTo(0, 0);
     } else if (curFolder === folderId) {
-      order = [...arrange(ids.filter(id => (byId.get(id).kind === 'pdf') === (tab === 'b'))), ...order]; build(); window.scrollTo(0, 0);
+      order = [...arrange(ids), ...order]; build(); window.scrollTo(0, 0);
     }
     setStatus(full ? 'พื้นที่เก็บข้อมูลเต็ม เพิ่มไฟล์ไม่ครบ'
       : libBad ? 'เปิด PDF ไม่ได้: ไฟล์ในโฟลเดอร์ lib ไม่ครบ (ต้องมี pdf.js และ pdf.worker.js ขนาดเต็ม)'
@@ -871,7 +869,6 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     el.querySelector('.cmark').hidden = !(m.caption && m.caption.trim());
     if (m.kind === 'pdf') {
       el.classList.add('book'); el.querySelector('.thumb').style.setProperty('--ar', '0.75');
-      const t = document.createElement('div'); t.className = 'ptitle'; t.textContent = m.name || 'PDF'; el.appendChild(t);
     }
     return el;
   }
