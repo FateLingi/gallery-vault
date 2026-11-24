@@ -1334,7 +1334,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
       rec.task = page.render({ canvasContext: g, viewport: vp }); await rec.task.promise;
       if (rec !== rendering.get(n)) return;
       el.replaceChildren(c);
-    } catch (e) { if (rendering.get(n) === rec) rendering.delete(n); }
+    } catch (e) { if (rendering.get(n) === rec) { rendering.delete(n); if (!(e && e.name === 'RenderingCancelledException')) setTimeout(sweepPages, 600); } }
   }
   function unrenderPg(el) {
     const n = +el.dataset.n, cur = rendering.get(n);
@@ -1352,12 +1352,22 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     if (rRaf) return;
     rRaf = requestAnimationFrame(() => {
       rRaf = 0; if (!rDoc) return;
+      clearTimeout(rSweepT); rSweepT = setTimeout(sweepPages, 200);
       const c = currentPage(); if (c === rCur) return; rCur = c;
       $('#rPg').textContent = c + ' / ' + rDoc.numPages;
       clearTimeout(rSaveT);
       rSaveT = setTimeout(() => { const m = byId.get(rId); if (m && m.lp !== c) { m.lp = c; putMeta(m).catch(() => {}); } }, 800);
     });
   });
+  let rSweepT = 0, rSweepI = 0;
+  function sweepPages() {
+    if (!rDoc || reader.hidden) return;
+    const kids = pcol.children, a = Math.max(0, rCur - 8), b = Math.min(kids.length, rCur + 8), pr = pagesEl.getBoundingClientRect();
+    for (let i = a; i < b; i++) {
+      const el = kids[i], n = i + 1; if (el.firstChild || rendering.has(n)) continue;
+      const q = el.getBoundingClientRect(); if (q.bottom > pr.top - 1500 && q.top < pr.bottom + 1500) renderPg(el);
+    }
+  }
   function schedRerender() {
     clearTimeout(rReT);
     rReT = setTimeout(() => { pcol.querySelectorAll('.pg').forEach(el => { if (el.firstChild) renderPg(el); }); }, 300);
@@ -1372,11 +1382,14 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   // pinch (touch) / ctrl+wheel / double tap / double click
   let pin = null, tapT = 0, tapX = 0, tapY = 0;
   const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  let tS = null;
   pagesEl.addEventListener('touchstart', e => {
     rTouched = true;
-    if (e.touches.length === 2) pin = { d: dist(e.touches), z: rZ }; else pin = null;
+    if (e.touches.length === 2) { pin = { d: dist(e.touches), z: rZ }; tS = null; tapT = 0; }
+    else { pin = null; tS = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(), moved: false }; }
   }, { passive: true });
   pagesEl.addEventListener('touchmove', e => {
+    if (tS && e.touches.length === 1 && Math.hypot(e.touches[0].clientX - tS.x, e.touches[0].clientY - tS.y) > 8) tS.moved = true;
     if (e.touches.length === 2 && pin) {
       if (e.cancelable) e.preventDefault();
       const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2, my = (e.touches[0].clientY + e.touches[1].clientY) / 2;
@@ -1385,8 +1398,9 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   }, { passive: false });
   pagesEl.addEventListener('touchend', e => {
     if (e.touches.length) return;
-    if (pin) { pin = null; return; }
-    const t = e.changedTouches[0], now = Date.now();
+    if (pin) { pin = null; tS = null; tapT = 0; return; }
+    const t = e.changedTouches[0], now = Date.now(), s0 = tS; tS = null;
+    if (!s0 || s0.moved || now - s0.t > 350 || Math.hypot(t.clientX - s0.x, t.clientY - s0.y) > 8) { tapT = 0; return; }   // a scroll / drag is not a tap
     if (now - tapT < 300 && Math.hypot(t.clientX - tapX, t.clientY - tapY) < 30) { setZoom(rZ > 1.05 ? 1 : 2.2, t.clientX, t.clientY); tapT = 0; }
     else { tapT = now; tapX = t.clientX; tapY = t.clientY; }
   }, { passive: true });
@@ -1394,7 +1408,8 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     if (!e.ctrlKey) return; e.preventDefault();
     setZoom(rZ * Math.exp(-e.deltaY * 0.01), e.clientX, e.clientY);
   }, { passive: false });
-  pagesEl.addEventListener('dblclick', e => { if (e.pointerType === 'touch') return; setZoom(rZ > 1.05 ? 1 : 2.2, e.clientX, e.clientY); });
+  let lastTouch = 0; pagesEl.addEventListener('touchend', () => { lastTouch = Date.now(); }, { passive: true });
+  pagesEl.addEventListener('dblclick', e => { if (e.pointerType === 'touch' || Date.now() - lastTouch < 800) return; setZoom(rZ > 1.05 ? 1 : 2.2, e.clientX, e.clientY); });
   window.addEventListener('resize', () => { if (!reader.hidden) { setBw(); schedRerender(); } });
   document.addEventListener('keydown', e => {
     if (reader.hidden) return;
@@ -1422,6 +1437,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
       rIO = new IntersectionObserver(es => es.forEach(en => en.isIntersecting ? renderPg(en.target) : unrenderPg(en.target)), { root: pagesEl, rootMargin: '1500px 0px' });
       pcol.querySelectorAll('.pg').forEach(d => rIO.observe(d));
       busy.hidden = true; $('#rPg').textContent = '1 / ' + n;
+      clearInterval(rSweepI); rSweepI = setInterval(sweepPages, 1200);
       const lp = Math.min(n, Math.max(1, m.lp || 1));
       const goLast = () => { if (lp > 1 && !rTouched) pcol.children[lp - 1].scrollIntoView({ block: 'start' }); };
       goLast();
@@ -1436,7 +1452,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   }
   function closeReader(fromPop) {
     if (reader.hidden) return;
-    clearTimeout(rSaveT); clearTimeout(rReT);
+    clearTimeout(rSaveT); clearTimeout(rReT); clearTimeout(rSweepT); clearInterval(rSweepI);
     const m = byId.get(rId); if (m && rDoc && m.lp !== rCur) { m.lp = rCur; putMeta(m).catch(() => {}); }
     rTok++; rendering.forEach(r => { try { r.task && r.task.cancel(); } catch (e) {} }); rendering.clear();
     if (rIO) { rIO.disconnect(); rIO = null; }
