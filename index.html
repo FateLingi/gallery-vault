@@ -233,6 +233,34 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
 .tag-strip{display:flex; align-items:flex-start; gap:6px; margin-top:8px}
 .tag-strip #vTags{flex:1; padding:0; min-height:32px; align-content:center}
 .tag-plus{min-height:32px; min-width:32px; padding:0 10px; border-radius:16px; background:var(--panel); color:var(--accent); border:1px solid color-mix(in srgb,var(--accent) 30%,var(--panel2))}
+
+/* stories */
+.sov{position:fixed; inset:0; z-index:40; background:rgba(0,0,0,.72); display:flex; align-items:flex-end; justify-content:center}
+.sov[hidden]{display:none}
+.ssheet{background:var(--panel); color:var(--text); width:100%; max-width:720px; max-height:96vh; overflow:auto; border-radius:16px 16px 0 0; padding:14px; border:1px solid color-mix(in srgb,var(--accent) 22%,transparent)}
+@media(min-width:760px){.sov{align-items:center}.ssheet{border-radius:16px}}
+.ssheet h2{margin:2px 0 10px; font-size:1rem; color:var(--accent)}
+.srow{display:flex; gap:12px; align-items:flex-start}
+#sCoverPrev{width:96px; aspect-ratio:3/4; border-radius:8px; background:var(--panel2); border:1px dashed color-mix(in srgb,var(--accent) 40%,transparent); display:flex; align-items:center; justify-content:center; text-align:center; font-size:.72rem; color:var(--muted); overflow:hidden; flex:none; cursor:pointer; padding:0}
+#sCoverPrev img{width:100%; height:100%; object-fit:cover}
+#sTitle{width:100%; background:transparent; border:0; border-bottom:1px solid color-mix(in srgb,var(--accent) 30%,transparent); font-size:1.6rem; font-weight:800; padding:6px 2px; outline:none; color:var(--text); font-family:inherit}
+#sBody{width:100%; min-height:46vh; background:var(--panel2); color:var(--text); border:1px solid color-mix(in srgb,var(--accent) 22%,transparent); border-radius:10px; padding:12px; line-height:1.75; font-size:1rem; resize:vertical; outline:none; margin-top:12px; font-family:inherit}
+.smeta{color:var(--muted); font-size:.78rem; margin:6px 2px 10px}
+.sacts{display:flex; gap:8px; align-items:center; margin-top:10px}
+.sacts .sp{flex:1}
+#sStage{position:relative; width:min(300px,78vw); aspect-ratio:3/4; margin:6px auto; overflow:hidden; background:#000; border-radius:8px; touch-action:none; cursor:grab; outline:2px solid var(--accent)}
+#sStage img{position:absolute; left:0; top:0; transform-origin:0 0; max-width:none; user-select:none; -webkit-user-drag:none}
+#sZoom{width:min(300px,78vw); display:block; margin:10px auto; accent-color:var(--accent)}
+.shint{text-align:center; color:var(--muted); font-size:.8rem}
+#sRead{position:fixed; inset:0; z-index:38; background:var(--bg); display:flex; flex-direction:column}
+#sRead[hidden]{display:none}
+#sbar{display:flex; gap:8px; align-items:center; padding:8px 12px; background:var(--bg); border-bottom:1px solid color-mix(in srgb,var(--accent) 14%,transparent)}
+#sbar .sp{flex:1}
+#sScroll{flex:1; overflow:auto}
+#sPage{max-width:680px; margin:0 auto; padding:22px 20px 80px}
+#sPage .cv{width:min(220px,60%); aspect-ratio:3/4; object-fit:cover; border-radius:8px; display:block; margin:6px auto 18px}
+#sPage h1{font-size:2rem; line-height:1.25; margin:0 0 18px; text-align:center}
+#sPage .tx{font-size:var(--fs,1.05rem); line-height:1.95; white-space:pre-wrap; word-break:break-word}
 </style>
 </head>
 <body>
@@ -247,6 +275,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     <details class="more">
       <summary aria-label="เมนูเพิ่มเติม">⋯</summary>
       <div class="menu">
+        <button id="writeStory" type="button">เขียนเรื่องราว</button>
         <button id="export" type="button">ส่งออกไฟล์สำรอง (.galv)</button>
         <button id="import" type="button">นำเข้าไฟล์สำรอง (.galv)</button>
         <button id="coverSet" type="button">หน้าบัง · ตั้งค่า</button>
@@ -398,6 +427,30 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
 <input id="coverIn" type="file" accept="image/*" hidden>
 <input id="backupIn" type="file" accept=".galv" hidden>
 
+<!-- stories -->
+<div class="sov" id="sEd" hidden><div class="ssheet">
+  <h2 id="sEdHead">เขียนเรื่องราว</h2>
+  <div class="srow">
+    <button id="sCoverPrev" type="button">แตะเพื่อ<br>เลือกรูปปก</button>
+    <div style="flex:1;min-width:0"><input id="sTitle" placeholder="ชื่อเรื่อง" maxlength="120"></div>
+  </div>
+  <textarea id="sBody" placeholder="เริ่มเขียนที่นี่..."></textarea>
+  <div class="smeta" id="sCnt">0 บรรทัด · 0 ตัวอักษร</div>
+  <div class="sacts"><button id="sDel" type="button" class="danger" hidden>ลบ</button><span class="sp"></span><button id="sCancel" type="button">ยกเลิก</button><button id="sSave" type="button" class="primary">บันทึก</button></div>
+  <input type="file" id="sImgIn" accept="image/*" hidden>
+</div></div>
+<div class="sov" id="sCr" hidden><div class="ssheet">
+  <h2>เลือกส่วนที่จะเป็นปก</h2>
+  <div id="sStage"><img id="sCimg" alt=""></div>
+  <input type="range" id="sZoom" min="1" max="4" step="0.01" value="1">
+  <div class="shint">ลากรูปเพื่อเลื่อน · ใช้แถบ / ล้อเมาส์ / ถ่างนิ้วเพื่อซูม</div>
+  <div class="sacts"><button id="sCrOther" type="button">เลือกรูปอื่น</button><span class="sp"></span><button id="sCrNo" type="button">ยกเลิก</button><button id="sCrOk" type="button" class="primary">ใช้เป็นปก</button></div>
+</div></div>
+<div id="sRead" hidden>
+  <div id="sbar"><button id="sBack" type="button">‹ กลับ</button><span class="sp"></span><button id="sFm" type="button">A−</button><button id="sFp" type="button">A+</button><button id="sMove" type="button">ย้าย</button><button id="sEdit" type="button">แก้ไข</button></div>
+  <div id="sScroll"><article id="sPage"></article></div>
+</div>
+
 <script>
 (() => {
   const $ = s => document.querySelector(s);
@@ -422,7 +475,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
       glow:'rgba(244,176,169,.25)', ambient1:'rgba(171,77,116,.29)', ambient2:'rgba(215,174,116,.19)'
     }
   };
-  function applyTheme(name) {
+  function applyTheme(name, save) {
     const p = themePresets[name] || themePresets.mystery, root = document.documentElement;
     root.style.setProperty('--bg',p.bg); root.style.setProperty('--panel',p.panel);
     root.style.setProperty('--panel2',p.panel2); root.style.setProperty('--text',p.text);
@@ -433,11 +486,11 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     root.style.setProperty('--ambient2',p.ambient2);
     document.querySelector('meta[name="theme-color"]').content = p.bg;
     $('#themeSelect').value = name;
-    try { localStorage.setItem('gallery-theme',name); } catch(e) {}
+    if (save) { try { localStorage.setItem('gallery-theme-' + space, name); } catch(e) {} }
   }
-  const savedTheme = (() => { try { return localStorage.getItem('gallery-theme') || 'mystery'; } catch(e) { return 'mystery'; } })();
-  $('#themeSelect').addEventListener('change', e => applyTheme(e.target.value));
-  applyTheme(savedTheme);
+  const themeFor = n => { try { return localStorage.getItem('gallery-theme-' + n) || localStorage.getItem('gallery-theme') || 'mystery'; } catch(e) { return 'mystery'; } };
+  $('#themeSelect').addEventListener('change', e => applyTheme(e.target.value, true));
+  applyTheme(themeFor(1), false);
 
   const grid = $('#grid'), viewer = $('#viewer'), statusEl = $('#status'), fgrid = $('#fgrid');
   const BATCH = 48, THUMB_MAX = 960, COVER_MAX = 640, TV = 2;
@@ -485,6 +538,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   }
   const folderOf = m => m.folder || UNFILED;
   let tab = 'p', keepTab = false;
+  const STORY = 'application/x-velora-story';
   const isBook = m => m.kind === 'pdf';
   const hasBooks = () => [...byId.values()].some(m => isBook(m) && !!m.cv === (space === 1));
   const viewItems = fid => itemsOf(fid);
@@ -633,6 +687,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     if (target === null) showHome(); else showFolder(target);
   }
   window.addEventListener('popstate', () => {
+    if (!sRd.hidden) { closeStory(true); return; }
     if (!reader.hidden) { closeReader(true); return; }
     if (!viewer.hidden) { closeViewer(true); return; }
     route();
@@ -732,14 +787,17 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
 
   /* ---------- add / delete / move files ---------- */
   async function addOne(file, caption, folder = UNFILED, tags = [], cv = false, extra = {}) {
-    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+    const isStory = file.type === STORY;
+    const sd = isStory ? JSON.parse(await file.text()) : null;
+    const isPdf = !isStory && (file.type === 'application/pdf' || /\.pdf$/i.test(file.name || ''));
     const mime = isPdf ? 'application/pdf' : file.type;
-    const kind = isPdf ? 'pdf' : file.type.startsWith('video/') ? 'video' : (file.type === 'image/gif' ? 'gif' : 'image');
+    const kind = isStory ? 'story' : isPdf ? 'pdf' : file.type.startsWith('video/') ? 'video' : (file.type === 'image/gif' ? 'gif' : 'image');
     let t = { thumb: null, w: 0, h: 0 };
-    try { t = kind === 'pdf' ? await pdfCover(file) : kind === 'video' ? await videoThumb(file) : await imageThumb(file); } catch (e) { if (isPdf) throw e; }
+    try { t = isStory ? await storyThumb(sd) : kind === 'pdf' ? await pdfCover(file) : kind === 'video' ? await videoThumb(file) : await imageThumb(file); } catch (e) { if (isPdf || isStory) throw e; }
     const folderTag = folder !== UNFILED && folders.get(folder) ? [folders.get(folder).name] : [];
     const meta = { kind, mime, caption: caption || '', tags: normalizeTags([...(tags || []), ...folderTag]), w: t.w, h: t.h, thumb: t.thumb, tv: TV, added: Date.now(), folder };
     if (cv) meta.cv = 1;
+    if (isStory) meta.name = String(sd.title || 'เรื่องราว').slice(0, 200);
     if (isPdf) { meta.name = String(extra.name || file.name || 'PDF').replace(/\.pdf$/i, '').slice(0, 200); meta.np = t.np || 0; if (extra.lp) meta.lp = extra.lp; }
     const blob = new Blob([file], { type: mime });
     const id = await new Promise((res, rej) => {
@@ -858,7 +916,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     const media = (m.kind === 'video' && !m.thumb)
       ? '<video muted playsinline preload="metadata" tabindex="-1"></video>'
       : '<img alt="" decoding="async" draggable="false">';
-    const play = (m.kind === 'image' || m.kind === 'pdf') ? '' : '<span class="play">▶</span>';
+    const play = (m.kind === 'image' || m.kind === 'pdf' || m.kind === 'story') ? '' : '<span class="play">▶</span>';
     el.innerHTML =
       '<button class="thumb" type="button" aria-label="เปิดดู">' + media + '<span class="badge"></span>' + play + '<span class="cmark" hidden>✎</span></button>';
     // clamp very wide / very tall pictures so one picture can't take over a whole row (they get cropped a little in the grid)
@@ -867,7 +925,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     el.querySelector('.thumb').style.setProperty('--ar', ar.toFixed(3));
     el.querySelector('.badge').textContent = m.kind === 'gif' ? 'GIF' : '';
     el.querySelector('.cmark').hidden = !(m.caption && m.caption.trim());
-    if (m.kind === 'pdf') {
+    if (m.kind === 'pdf' || m.kind === 'story') {
       el.classList.add('book'); el.querySelector('.thumb').style.setProperty('--ar', '0.75');
     }
     return el;
@@ -965,7 +1023,7 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   $('#vdel').onclick = deleteItem;
   grid.addEventListener('click', e => {
     const el = e.target.closest('.tile'); if (!el) return;
-    if (e.target.closest('.thumb')) { const m = byId.get(+el.dataset.id); if (m && m.kind === 'pdf') openReader(m.id); else openViewer(+el.dataset.id); }
+    if (e.target.closest('.thumb')) { const m = byId.get(+el.dataset.id); if (m && m.kind === 'pdf') openReader(m.id); else if (m && m.kind === 'story') openStory(m.id); else openViewer(+el.dataset.id); }
   });
   document.addEventListener('visibilitychange', () => { if (document.hidden) saveCaption(); });
   window.addEventListener('pagehide', saveCaption);
@@ -1117,8 +1175,10 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     try { history.pushState({ v: 1, f: curFolder }, ''); pushed = true; } catch (e) { pushed = false; }
   }
   function stepViewer(d) {
-    const i = order.indexOf(vId), j = i + d;
-    if (i < 0 || j < 0 || j >= order.length) return;
+    const i = order.indexOf(vId); if (i < 0) return;
+    let j = i + d; const skip = id => { const k = byId.get(id); return k && (k.kind === 'pdf' || k.kind === 'story'); };
+    while (j >= 0 && j < order.length && skip(order[j])) j += d;
+    if (j < 0 || j >= order.length) return;
     showInViewer(order[j]);
   }
   $('#prevV').onclick = () => stepViewer(-1);
@@ -1491,9 +1551,131 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
   $('#tabP').onclick = () => gotoTab('p');
   $('#tabB').onclick = () => gotoTab('b');
 
+  /* ---------- stories (short fiction written inside the app) ---------- */
+  const sEd = $('#sEd'), sCr = $('#sCr'), sRd = $('#sRead');
+  let sCur = null, sCover = null, sFolder = UNFILED, sData = null, sPushed = false;
+  let sFs = (() => { try { return +localStorage.getItem('velora-sfs') || 1.05; } catch (e) { return 1.05; } })();
+  async function storyThumb(d) {
+    const c = document.createElement('canvas'); c.width = 600; c.height = 800; const g = c.getContext('2d');
+    if (d.cover) { const img = await loadImage(d.cover); g.drawImage(img, 0, 0, 600, 800); }
+    else {
+      const gr = g.createLinearGradient(0, 0, 600, 800); gr.addColorStop(0, '#3a1f4a'); gr.addColorStop(1, '#14304a');
+      g.fillStyle = gr; g.fillRect(0, 0, 600, 800);
+      g.fillStyle = '#fff'; g.font = '800 54px system-ui, "Noto Sans Thai", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      const lines = []; let cur = '';
+      for (const ch of String(d.title || '')) { if (g.measureText(cur + ch).width > 500) { lines.push(cur); cur = ch; } else cur += ch; }
+      if (cur) lines.push(cur);
+      const ls = lines.slice(0, 6), lh = 72, y0 = 400 - (ls.length - 1) * lh / 2;
+      ls.forEach((t, i) => g.fillText(t, 300, y0 + i * lh));
+    }
+    return { thumb: await canvasBlob(c), w: 600, h: 800 };
+  }
+  const sCount = () => { const v = $('#sBody').value; $('#sCnt').textContent = (v ? v.split('\n').length : 0) + ' บรรทัด · ' + v.length + ' ตัวอักษร'; };
+  const sShowCover = () => { const b = $('#sCoverPrev'); b.innerHTML = ''; if (sCover) { const i = document.createElement('img'); i.src = sCover; i.alt = ''; b.appendChild(i); } else b.innerHTML = 'แตะเพื่อ<br>เลือกรูปปก'; };
+  function openStoryEditor(m, d, folder) {
+    sCur = m || null; sCover = d ? d.cover || null : null; sFolder = folder === undefined ? UNFILED : folder;
+    $('#sEdHead').textContent = m ? 'แก้ไขเรื่องราว' : 'เขียนเรื่องราว';
+    $('#sTitle').value = d ? d.title : ''; $('#sBody').value = d ? d.body : ''; $('#sDel').hidden = !m;
+    sShowCover(); sCount(); sEd.hidden = false;
+  }
+  $('#writeStory').onclick = () => { closeMenus(); openStoryEditor(null, null, UNFILED); };
+  $('#sBody').addEventListener('input', sCount);
+  $('#sCancel').onclick = () => { sEd.hidden = true; };
+  $('#sCoverPrev').onclick = () => $('#sImgIn').click();
+  $('#sSave').onclick = async () => {
+    const title = $('#sTitle').value.trim() || 'ไม่มีชื่อเรื่อง', body = $('#sBody').value;
+    const d = { title, body, cover: sCover || null }, blob = new Blob([JSON.stringify(d)], { type: STORY });
+    try {
+      if (sCur) {
+        const m = sCur, t = await storyThumb(d); m.name = title.slice(0, 200); m.thumb = t.thumb; m.w = t.w; m.h = t.h;
+        await new Promise((res, rej) => { const tx = db.transaction(['meta', 'files'], 'readwrite'); tx.objectStore('meta').put(m); tx.objectStore('files').put({ id: m.id, blob }); tx.oncomplete = res; tx.onerror = tx.onabort = () => rej(tx.error); });
+        sData = d; const old = grid.querySelector('.tile[data-id="' + m.id + '"]');
+        if (old) { hide(old); tileObserver.unobserve(old); const nt = makeTile(m); old.replaceWith(nt); tileObserver.observe(nt); }
+        if (!sRd.hidden) renderStory();
+        setStatus('บันทึกแล้ว');
+      } else {
+        const id = await addOne(blob, '', sFolder, [], space === 1);
+        if (curFolder === null) { if (sFolder === UNFILED) { order = [id, ...order]; build(); } renderHome(); window.scrollTo(0, 0); }
+        else if (curFolder === sFolder) { order = [id, ...order]; build(); window.scrollTo(0, 0); }
+        setStatus('เพิ่มเรื่องราวแล้ว');
+      }
+      sEd.hidden = true;
+    } catch (e) { setStatus(e && e.name === 'QuotaExceededError' ? 'พื้นที่เก็บข้อมูลเต็ม' : 'บันทึกไม่สำเร็จ'); }
+  };
+  $('#sDel').onclick = async () => {
+    const m = sCur; if (!m || !confirm('ลบเรื่องนี้ออกจากแกลเลอรี?')) return;
+    try { await new Promise((res, rej) => { const tx = db.transaction(['meta', 'files'], 'readwrite'); tx.objectStore('meta').delete(m.id); tx.objectStore('files').delete(m.id); tx.oncomplete = res; tx.onerror = tx.onabort = () => rej(tx.error); }); }
+    catch (e) { setStatus('ลบไม่สำเร็จ'); return; }
+    byId.delete(m.id); sEd.hidden = true; if (!sRd.hidden) closeStory(); sCur = null;
+    if (curFolder === null) showHome(); else showFolder(curFolder);
+    setStatus('ลบแล้ว');
+  };
+  /* cover cropping */
+  const sSt = $('#sStage'), sIm = $('#sCimg'); let C = { s: 1, min: 1, x: 0, y: 0, w: 0, h: 0, W: 0, H: 0 };
+  $('#sImgIn').onchange = e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return; const u = URL.createObjectURL(f);
+    sIm.onload = () => { sCr.hidden = false; requestAnimationFrame(() => {
+      C.W = sSt.clientWidth; C.H = sSt.clientHeight; C.w = sIm.naturalWidth; C.h = sIm.naturalHeight;
+      C.min = Math.max(C.W / C.w, C.H / C.h); C.s = C.min; C.x = (C.W - C.w * C.s) / 2; C.y = (C.H - C.h * C.s) / 2; $('#sZoom').value = 1; cApply(); }); };
+    sIm.src = u;
+  };
+  function cApply() { C.x = Math.min(0, Math.max(C.W - C.w * C.s, C.x)); C.y = Math.min(0, Math.max(C.H - C.h * C.s, C.y)); sIm.style.transform = `translate(${C.x}px,${C.y}px) scale(${C.s})`; }
+  function cZoom(z, cx, cy) { z = Math.max(1, Math.min(4, z)); const ns = C.min * z, k = ns / C.s; C.x = cx - (cx - C.x) * k; C.y = cy - (cy - C.y) * k; C.s = ns; $('#sZoom').value = z; cApply(); }
+  $('#sZoom').oninput = e => cZoom(+e.target.value, C.W / 2, C.H / 2);
+  sSt.addEventListener('wheel', e => { e.preventDefault(); const r = sSt.getBoundingClientRect(); cZoom(C.s / C.min * Math.exp(-e.deltaY * .0015), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+  const cP = new Map(); let cPd = 0;
+  sSt.addEventListener('pointerdown', e => { sSt.setPointerCapture(e.pointerId); cP.set(e.pointerId, [e.clientX, e.clientY]); if (cP.size === 2) { const [a, b] = [...cP.values()]; cPd = Math.hypot(a[0] - b[0], a[1] - b[1]); } });
+  sSt.addEventListener('pointermove', e => {
+    if (!cP.has(e.pointerId)) return; const o = cP.get(e.pointerId); cP.set(e.pointerId, [e.clientX, e.clientY]);
+    if (cP.size === 2) { const [a, b] = [...cP.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]), r = sSt.getBoundingClientRect(); if (cPd) cZoom(C.s / C.min * d / cPd, (a[0] + b[0]) / 2 - r.left, (a[1] + b[1]) / 2 - r.top); cPd = d; }
+    else if (cP.size === 1) { C.x += e.clientX - o[0]; C.y += e.clientY - o[1]; cApply(); }
+  });
+  const cUp = e => { cP.delete(e.pointerId); cPd = 0; }; sSt.addEventListener('pointerup', cUp); sSt.addEventListener('pointercancel', cUp);
+  $('#sCrNo').onclick = () => { sCr.hidden = true; };
+  $('#sCrOther').onclick = () => $('#sImgIn').click();
+  $('#sCrOk').onclick = () => {
+    const c = document.createElement('canvas'); c.width = 600; c.height = 800;
+    c.getContext('2d').drawImage(sIm, -C.x / C.s, -C.y / C.s, C.W / C.s, C.H / C.s, 0, 0, 600, 800);
+    sCover = c.toDataURL('image/jpeg', .88); sShowCover(); sCr.hidden = true;
+  };
+  /* reading */
+  function renderStory() {
+    const p = $('#sPage'); p.innerHTML = '';
+    if (sData.cover) { const i = document.createElement('img'); i.className = 'cv'; i.src = sData.cover; i.alt = ''; p.appendChild(i); }
+    const h = document.createElement('h1'); h.textContent = sData.title; p.appendChild(h);
+    const t = document.createElement('div'); t.className = 'tx'; t.textContent = sData.body; p.appendChild(t);
+    p.style.setProperty('--fs', sFs + 'rem');
+  }
+  async function openStory(id) {
+    const m = byId.get(id); if (!m || !sRd.hidden) return;
+    try { const f = await getFile(id); sData = JSON.parse(await f.text()); } catch (e) { setStatus('เปิดเรื่องนี้ไม่สำเร็จ'); return; }
+    sCur = m; renderStory(); $('#sScroll').scrollTop = 0; sRd.hidden = false;
+    try { history.pushState({ s: 1, f: curFolder }, ''); sPushed = true; } catch (e) { sPushed = false; }
+  }
+  function closeStory(fromPop) {
+    if (sRd.hidden) return; sRd.hidden = true; sCur = null; sData = null;
+    if (sPushed && !fromPop) { sPushed = false; history.back(); } else sPushed = false;
+  }
+  $('#sBack').onclick = () => closeStory();
+  $('#sEdit').onclick = () => openStoryEditor(sCur, sData);
+  const sSetFs = v => { sFs = Math.max(.85, Math.min(1.8, v)); try { localStorage.setItem('velora-sfs', sFs); } catch (e) {} $('#sPage').style.setProperty('--fs', sFs + 'rem'); };
+  $('#sFp').onclick = () => sSetFs(sFs + .1); $('#sFm').onclick = () => sSetFs(sFs - .1);
+  $('#sMove').onclick = async () => {
+    const m = sCur; if (!m) return; const to = await pickFolder(folderOf(m)); if (to === null || to === folderOf(m)) return;
+    try {
+      m.folder = to === COVER ? UNFILED : to;
+      if (to === COVER) m.cv = 1; else if (to !== UNFILED && folders.get(to)) m.tags = normalizeTags([...(m.tags || []), folders.get(to).name]);
+      await putMeta(m);
+    } catch (e) { setStatus('ย้ายไม่สำเร็จ'); return; }
+    closeStory(); if (curFolder === null) showHome(); else showFolder(curFolder);
+    const f = folders.get(to);
+    setStatus('ย้ายไป ' + (to === COVER ? 'หน้า 1' : to === UNFILED ? 'หน้าแรก (ไม่ใส่แฟ้ม)' : '"' + (f ? f.name : '') + '"') + ' แล้ว');
+  };
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !sRd.hidden && sEd.hidden && sCr.hidden) closeStory(); });
+
   /* ---------- re-make older thumbnails ---------- */
   async function upgradeThumbs() {
-    const todo = [...byId.values()].filter(m => m.tv !== TV && m.kind !== 'pdf');
+    const todo = [...byId.values()].filter(m => m.tv !== TV && m.kind !== 'pdf' && m.kind !== 'story');
     let n = 0;
     for (const m of todo) {
       setStatus(`กำลังปรับภาพตัวอย่าง ${++n}/${todo.length}`, 0);
@@ -1527,9 +1709,11 @@ dialog input:focus,dialog select:focus{border-color:var(--accent); outline:none}
     try { const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(salt + ':' + pin)); return [...new Uint8Array(d)].map(b => b.toString(16).padStart(2, '0')).join(''); }
     catch (e) { let h = 5381; for (const ch of salt + ':' + pin) h = ((h << 5) + h + ch.charCodeAt(0)) | 0; return 'x' + h; }
   }
-  function applySpace() { document.body.classList.toggle('space1', space === 1); }
+  function applySpace() { document.body.classList.toggle('space1', space === 1); applyTheme(themeFor(space), false); }
   function setSpace(n) {
     document.querySelectorAll('dialog[open]').forEach(d => d.close());
+    if (!sRd.hidden) closeStory(true);
+    sEd.hidden = true; sCr.hidden = true;
     if (!reader.hidden) closeReader(true);
     if (!viewer.hidden) closeViewer(true);
     space = n; applySpace(); lsSet(OPEN, n === 2 ? '1' : '0');
